@@ -15,6 +15,7 @@ from tools import (
 
 load_dotenv()
 
+
 client = AsyncOpenAI()
 
 
