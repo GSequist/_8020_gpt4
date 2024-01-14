@@ -29,28 +29,31 @@ async def chat_completion_request(messages, user_id, functions=None):
         try:
             max_tokens = 3000
             total_tokens = 0
+            last_removed_message = None
 
             for msg in messages:
                 msg_content = msg["content"]
-                msg_tokens = len(tokenizer.encode(msg_content, disallowed_special=()))
+                msg_tokens = len(tokenizer.encode(msg_content))
                 total_tokens += msg_tokens
 
             print(
-                f"\n[chat_completion_request]: total tokens before token cutter loop: {total_tokens}"
+                f"[chat_completion_request]: Total tokens before token cutter loop: {total_tokens}"
             )
 
-            if total_tokens > max_tokens:
-                tokens_to_remove = total_tokens - max_tokens
-                last_msg = messages[-1]
-                last_msg_content = last_msg["content"]
-                last_msg_tokens = tokenizer.encode(last_msg_content)
-                if len(last_msg_tokens) >= tokens_to_remove:
-                    truncated_tokens = last_msg_tokens[:-tokens_to_remove]
-                    last_msg["content"] = tokenizer.decode(truncated_tokens)
-                    total_tokens = max_tokens
+            while total_tokens > max_tokens and messages:
+                last_removed_message = messages.pop(0)
+                removed_tokens = len(tokenizer.encode(last_removed_message["content"]))
+                total_tokens -= removed_tokens
+
+            if total_tokens > max_tokens and last_removed_message:
+                tokens = tokenizer.encode(last_removed_message["content"])
+                truncated_tokens = tokens[:max_tokens]
+                last_removed_message["content"] = tokenizer.decode(truncated_tokens)
+                total_tokens = max_tokens
+                messages = [last_removed_message]
 
             print(
-                f"\n[chat_completion_request]: total tokens after token cutter loop: {total_tokens}"
+                f"[chat_completion_request]: Total tokens after token cutter loop: {total_tokens}"
             )
 
             # a flag to check if user has uploaded files
@@ -183,7 +186,7 @@ _8020_functions = [
                 },
                 "which_doc": {
                     "type": "string",
-                    "description": "If user uploaded several documents which one is she asking questions about?",
+                    "description": "If user uploaded several documents which one is she asking questions about? If the user asks question in relation to all of them leave empty.",
                 },
             },
             "required": ["query", "which_doc"],
