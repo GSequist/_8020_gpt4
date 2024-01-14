@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=no"
+    />
+    <link rel="icon" type="image/png" href="static/logo_elements_black.png" />
+    <link rel="stylesheet" href="/static/css/styles.css" />
+    <script src="https://cdn.socket.io/4.4.1/socket.io.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/uuid/8.3.2/uuid.min.js"></script>
+
+    <title>_8020_gpt4_</title>
+  </head>
+  <body class="notranslate" translate="no">
+    <div class="giant-text">
+      80<strong>20</strong>ai<span style="color: #e50071">+</span>
+    </div>
+    <div class="header-container">
+      <div class="toggleTitle">_8020_gpt4_</div>
+      <img
+        class="toggleButton"
+        src="static/toggle_black.png"
+        alt="toggle_button"
+      />
+    </div>
+
+    <div class="container">
+      <form id="text-form">
+        <img class="logo" src="static/logo_elements_black.png" alt="Logo" />
+        <div class="input-container">
+          <input
+            type="file"
+            id="file"
+            name="file"
+            accept=".txt,.csv,.xls,.xlsx,.ppt,.pptx,.doc,.docx,.pdf"
+            style="display: none"
+          />
+          <button type="button" class="file-btn" id="upload">
+            <img src="static/upload_8020_black.png" alt="" />
+          </button>
+
+          <input type="input" id="input" class="input" autocomplete="off" />
+          <button id="submit" type="submit">
+            <img src="static/send_8020_black.png" alt="" />
+          </button>
+        </div>
+      </form>
+      <div id="output"></div>
+      <div id="process-gif-container"></div>
+    </div>
+    <div id="mobile-warning">
+      <p>
+        This application is optimized for desktop use. Please switch to a
+        desktop for the best experience.
+      </p>
+    </div>
+    <script src="/static/js/script.js"></script>
+  </body>
+</html>
