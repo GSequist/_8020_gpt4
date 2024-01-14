@@ -226,17 +226,13 @@
     socket.addEventListener('message', function (event) {
         const data = JSON.parse(event.data);
 
-        if (data.type === 'response') {
-            if (data.payload && data.payload.img_urls) {
-                data.payload.img_urls.forEach(url => {
-                    const imgElement = document.createElement('img');
-                    imgElement.src = url;
-                    var br = document.createElement('br');
-                    output.appendChild(br);
-                    output.appendChild(br);
-                    output.appendChild(imgElement);
-                });
-            }
+        if (data.type === 'response' && data.payload && data.payload.img_url) {
+
+            const imgElement = document.createElement('img');
+            imgElement.src = data.payload.img_url; 
+            output.appendChild(imgElement);
+            output.appendChild(document.createElement('br'));
+            
             output.scrollTop = output.scrollHeight;
         }
     });
@@ -331,7 +327,7 @@
                     hasClearedOutput = true;
                     }  
                 document.getElementById('output').classList.remove('largeFont');
-                console.log('Previous conversations: Removed largeFont, current classes:', document.getElementById('output').className);
+                console.log('Previous conversations:', data.data);
                 data.data.forEach(message => {
                     if (message.role === 'user') {
                         output.innerHTML += `<span class="userMessage">${message.content}</span><br><br>`;
@@ -363,6 +359,8 @@
                 gifSrc = isWhiteBackground ? 'static/gif_vector.gif' : 'static/gif_vector_white.gif'; 
             } else if (data.data.includes('thinking')) {
                 gifSrc = isWhiteBackground ? 'static/gif_thinking.gif' : 'static/gif_thinking_white.gif'; 
+            } else if (data.data.includes('image')) {
+                gifSrc = isWhiteBackground ? 'static/gif_paint_black.gif' : 'static/gif_paint_white.gif'; 
             }
 
             const gifContainer = document.getElementById('process-gif-container');

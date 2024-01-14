@@ -1,16 +1,23 @@
 """please for any changes to code let me know thanks @george"""
 
 import json
+import base64
 import os
 import time
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
-from termcolor import colored
 import openai
-from utils import tokenizer, WORK_FOLDER, extract_sources_and_pages, sources_sessions
+from utils import (
+    tokenizer,
+    WORK_FOLDER,
+    extract_sources_and_pages,
+    sources_sessions,
+    url_sessions,
+)
 from tools import (
     internet_search,
     doc_vectorstore,
+    dalle_3,
 )
 
 load_dotenv()
@@ -197,7 +204,6 @@ _8020_functions = [
         "description": """Use this function to search internet if you need more information.
         Don't use the function without the values. ALWAYS, ask the user for the values if they are missing.
         Don't make assumptions about what values to plug into functions. Ask for clarification if a user request is ambiguous.
-        Remember never to include urls in your response. 
         """,
         "parameters": {
             "type": "object",
@@ -205,6 +211,23 @@ _8020_functions = [
                 "query": {
                     "type": "string",
                     "description": """What is the information the user is asking of you?""",
+                },
+            },
+            "required": ["query"],
+        },
+    },
+    {
+        "name": "dalle3",
+        "description": """Use this function to create beautiful images for the user.
+        Remember to explain to the user that the more descriptive she is the better the image. 
+        Suggest to user some ideas for the image before using the function.
+        """,
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": """What image user wants?""",
                 },
             },
             "required": ["query"],
@@ -354,6 +377,51 @@ async def call_8020_function(messages, func_call, user_id=None, websocket=None):
         )
         try:
             print("\n[vectorstore]: got search results, summarizing content")
+            response = await chat_completion_request(
+                messages, user_id, functions=_8020_functions
+            )
+            return response
+        except Exception as e:
+            print(type(e))
+            raise Exception("Function chat request failed")
+
+    elif func_call["name"] == "dalle3":
+        message = json.dumps(
+            {"type": "message", "data": ">creating image, please wait.."}
+        )
+        await websocket.send_text(message)
+        try:
+            parsed_output = json.loads(func_call["arguments"])
+
+            query = parsed_output.get("query", "")
+            print(f"\n[dalle3]:query: {query}")
+
+            base64_img = await dalle_3(query)
+            base64_url = f"data:image/png;base64,{base64_img}"
+
+            if user_id not in url_sessions:
+                url_sessions[user_id] = {}
+            url_sessions[user_id]["img_url"] = base64_url
+
+        except Exception as e:
+            import traceback
+
+            print("\n[dalle3]: function execution failed")
+            print("\n[dalle3]: error message:", e)
+            print("\n[dalle3]: stack trace:")
+            traceback.print_exc()
+
+            cleaned_web = f"the function to create images failed with this error {e} please let the user know"
+
+        messages.append(
+            {
+                "role": "function",
+                "name": func_call["name"],
+                "content": f"Function {func_call['name']} executed successfully.",
+            }
+        )
+        try:
+            print("\n[duckduckgo]: got search results, summarizing content")
             response = await chat_completion_request(
                 messages, user_id, functions=_8020_functions
             )

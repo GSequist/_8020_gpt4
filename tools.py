@@ -1,10 +1,16 @@
 """please for any changes to code let me know thanks @george"""
 
 import traceback
+import base64
+from dotenv import load_dotenv
+from openai import AsyncOpenAI
 from langchain_community.tools import DuckDuckGoSearchRun
 from langchain_community.vectorstores import FAISS
 from langchain.embeddings.openai import OpenAIEmbeddings
 
+load_dotenv()
+
+client = AsyncOpenAI()
 
 #############################################################################################################
 # doc_vectorstore
@@ -65,3 +71,16 @@ def internet_search(query):
 
 
 #####################################################################################################
+## dalle3
+
+
+async def dalle_3(query: str):
+    image_response = await client.images.generate(
+        model="dall-e-3",
+        prompt=query,
+        n=1,
+        size="1024x1024",
+        response_format="b64_json",
+    )
+
+    return image_response.data[0].b64_json

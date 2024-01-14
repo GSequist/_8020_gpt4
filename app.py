@@ -62,6 +62,7 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str):
         await initialize_conversation(user_id)
     else:
         await send_previous_conversations(user_id, websocket)
+        print(f"\n[websocket_endpoint]: sending previous conversations")
 
     # incoming messages
     try:
@@ -236,14 +237,16 @@ async def handle_message(user_id, data, websocket):
 
         if user_id in url_sessions:
             payload = {
-                "img_urls": url_sessions[user_id].get("img_urls", []),
+                "img_url": url_sessions[user_id].get("img_url", ""),
             }
             message = json.dumps({"type": "response", "data": "", "payload": payload})
             await websocket.send_text(message)
-            print(f"\n[handle_message]: payload emitted: {payload}")
 
-            # clear urls
-            url_sessions[user_id] = {"img_urls": []}
+            print(
+                f"[handle_message]: URL emitted (first 100 chars): {payload['img_url'][:100]}"
+            )
+
+            url_sessions[user_id]["img_url"] = ""
 
         if user_id in sources_sessions:
             sources = sources_sessions[user_id]
