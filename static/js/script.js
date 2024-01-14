@@ -428,7 +428,7 @@
     // checks file size and initiates upload
     function checkFileSizeAndUpload(event) {
     console.log('checking file size');
-    const maxFileSizeMB = 15;
+    const maxFileSizeMB = 100;
     const files = event.target.files;
 
     // check if multiple files are selected
