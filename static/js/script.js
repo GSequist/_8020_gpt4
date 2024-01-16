@@ -26,7 +26,7 @@
     }
 
     const userId = getUserId();
-    const socket = new WebSocket(`wss://${location.host}/ws/${userId}`);
+    const socket = new WebSocket(`ws://${location.host}/ws/${userId}`);
 
     socket.addEventListener('open', function (event) {
         console.log('Connected to server with user ID:', userId);
@@ -594,16 +594,22 @@
             uploadButton.classList.remove('disabled-button');
 
             if (data.status === 'success') {
-                input.value = `>file ${file.name} uploaded successfully`; 
+                input.value = `>file ${file.name} uploaded successfully`;
+                aiInput = true; 
             } else if (data.status === 'error' && data.message === '>file size exceeded')
             {
                 input.value = '>file size exceeded';
+                aiInput = true;
             }
             else {
                 input.value = `>error during upload of ${file.name}, sorry.`;
+                aiInput = true;
             }
             input.addEventListener('focus', function() {
-                input.value = '';
+                if (aiInput) {
+                    input.value = '';
+                    aiInput = false;
+                }
             });
         })
         .catch(error => {
