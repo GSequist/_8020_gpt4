@@ -104,8 +104,7 @@ async def chat_completion_request(messages, user_id, functions=None):
                 You don't always have to use a tool to answer a question.
                 If you are about to answer in a table format, start with an '^' like this '^ | column 1 | column 2' and start each new row with '^'. End the table with '±' before continuing with any additional text. Don't use any special characters for text inside the table.
                 Don't ever use symbols '^' or '±' other than when creating a table.
-                If you are creating code blocks, start with ~ and end with ~ like this ~python def fibonacci(count): sequence = []....cont'd and then end with ~.
-                Don't ever use symbol ~ other than when creating a code block.
+                I you write code start always with special character ~ and end it also with ~. Don't forget this.
                 If a function does not return anything or fails, let the user know!
                 If a function returns answer which is unsatisfactory given user's question, explain it to user and run the function again adjusting the parameters. This is especially true for functions that return web results.
                 Before answering, take a moment to think deeply about how best to answer user query. Think always step by step.
@@ -691,6 +690,8 @@ async def chat_completion_with_function_execution(
 
         async for chunk in response_generator:
             if hasattr(chunk.choices[0], "delta"):
+                ##helper
+                # print(f"\n[chat_completion_with_function_execution]: chunk: {chunk}")
                 delta = chunk.choices[0].delta
 
                 if hasattr(delta, "content"):
