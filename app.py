@@ -2,7 +2,7 @@
 
 import os
 from urllib.parse import unquote
-import base64
+from typing import Dict
 import gc
 from fastapi import FastAPI, WebSocket, Request, WebSocketDisconnect, HTTPException
 from fastapi import FastAPI, UploadFile, File
@@ -108,11 +108,27 @@ async def list_files_for_user(user_id: str):
     return files
 
 
+MAX_TOTAL_SIZE_MB = 30
+
+
+def get_total_size(user_id: str) -> int:
+    """get the total size of files in the user's directory."""
+    user_folder = os.path.join(WORK_FOLDER, user_id)
+    total_size = 0
+    if os.path.exists(user_folder):
+        for file in os.listdir(user_folder):
+            total_size += os.path.getsize(os.path.join(user_folder, file))
+    return total_size
+
+
 @app.post("/upload/{user_id}")
-async def upload_file(user_id: str, file: UploadFile = File(...)):
+async def upload_file(user_id: str, file: UploadFile = File(...)) -> Dict[str, str]:
+    total_size = get_total_size(user_id)
+    file_size = os.fstat(file.file.fileno()).st_size
+    if total_size + file_size > MAX_TOTAL_SIZE_MB * 1024 * 1024:
+        return {"status": "error", "message": ">file size exceeded"}
     file_path = f"{WORK_FOLDER}/{user_id}/{file.filename}"
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
-
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
     process_documents(user_id, os.path.dirname(file_path))

@@ -202,6 +202,21 @@
     let currentRow = null; 
     let currentCell = null;
     
+    // helper for code block rendering
+    function createAndAppendCodeBlock(outputElement) {
+        const codeBlock = document.createElement('pre');
+        codeBlock.classList.add('code-block');
+        outputElement.appendChild(codeBlock);
+        return codeBlock;
+    }
+
+    function isCodeFormat(data) {
+        return data.includes('~');
+    }
+
+    let codeBlockElement = null;
+    let isProcessingCode = false;
+
     // listen for response from server
     socket.addEventListener('message', function (event) {
         const data = JSON.parse(event.data);
@@ -266,6 +281,31 @@
                         currentCell = null;
                     }
                 });
+                } else {
+                if (isCodeFormat(data.data)) {
+                    // Toggle code processing state if backticks are found
+                    if (!isProcessingCode) {
+                        isProcessingCode = true;
+                        codeBlockElement = createAndAppendCodeBlock(output);
+                    } else {
+                        isProcessingCode = false;
+                    }
+                    // Remove the backticks from the data
+                    data.data = data.data.replace('~', '');
+                }
+
+                if (isProcessingCode) {
+                    // Append text to the code block element
+                    let formattedCode = data.data;
+                    if (formattedCode.includes('\n')) {
+                        formattedCode = formattedCode.replace(/\n/g, '<br>');
+                    }
+                    codeBlockElement.innerHTML += `<span>${formattedCode}</span>`;
+
+                    // Check if the closing backticks are in the current data
+                    if (!isProcessingCode) {
+                        codeBlockElement = null;
+                    }
             } else {
                 let messageContent = data.data;
                 if (messageContent.includes('\n')) {
@@ -276,7 +316,9 @@
         }
         output.scrollTop = output.scrollHeight;
         }
+    }
     });
+
 
     //helper for images rendering
     socket.addEventListener('message', function (event) {
@@ -552,13 +594,17 @@
             uploadButton.classList.remove('disabled-button');
 
             if (data.status === 'success') {
-                input.value = ""; //clean
-            } else {
-                input.value = `>error during upload of ${file.name}, sorry.`;
-                input.addEventListener('focus', function() {
-                    input.value = '';
-                });
+                input.value = `>file ${file.name} uploaded successfully`; 
+            } else if (data.status === 'error' && data.message === '>file size exceeded')
+            {
+                input.value = '>file size exceeded';
             }
+            else {
+                input.value = `>error during upload of ${file.name}, sorry.`;
+            }
+            input.addEventListener('focus', function() {
+                input.value = '';
+            });
         })
         .catch(error => {
             console.error('Error during file upload:', error);
@@ -593,11 +639,12 @@
                 const messages = [
                 'your documents compressed to a Q&A box',
                 'they say i am IQ 140+',
-                'tell me your idea and ask me to brainstorm on it',
-                'i can create presentation, try me',
-                'i have many ideas about how AI can be used for your clients, ask me',
-                'i am good at images too',
+                'tell me your idea and ask me to brainstorm on it..',
+                'i can create presentation, try me..',
+                'i have many ideas about how AI can be used for your clients, ask me..',
+                'i am good at images too..',
                 'google? aww that is so 2022, ask me instead',
+                'i can do tables, you know..',
                 'please remember if you leave the page open too long your browser forgets your id, your docs will be deleted and ill forget our conversation',
                 ];
                 const index = messages.indexOf(text);
