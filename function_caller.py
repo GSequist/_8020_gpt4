@@ -8,6 +8,7 @@ import os
 import time
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
+from asyncio import to_thread
 import openai
 from deck_generator import generate_prs
 from utils import (
@@ -274,7 +275,7 @@ _8020_functions = [
         "name": "deck_generator",
         "description": """Use this function to create beautiful presentation for user.
         Always ask user as many details as possible to be able to create the presentation.
-        Ask the user for number of slides minimum is 3 and maximum 6 so she does not wait long.
+        Ask the user for number of slides minimum is 3 and maximum 5 so she does not wait long.
         Always ask if she wants to use the context or information from your previous discussion to be used in the slides.
         If the user does not provide all values ask again until you have all values.
         """,
@@ -287,6 +288,7 @@ _8020_functions = [
                 },
                 "no_pages": {
                     "type": "string",
+                    "enum": ["3", "4", "5"],
                     "description": """How many slides the user wants?""",
                 },
                 "context": {
@@ -317,7 +319,7 @@ async def call_8020_function(messages, func_call, user_id=None, websocket=None):
             parsed_output = json.loads(func_call["arguments"])
 
             print(f"\n[duckduckgo]: parsed_output: {parsed_output}")
-            web_results = internet_search(parsed_output["query"])
+            web_results = await to_thread(internet_search, parsed_output["query"])
 
             used_tokens = 0
             max_tokens = 2000
@@ -375,9 +377,9 @@ async def call_8020_function(messages, func_call, user_id=None, websocket=None):
             query = parsed_output.get("query", "")
             print(f"\n[vectorstore]:query: {query}")
 
-            descriptions = doc_vectorstore(query, user_id)
+            descriptions = await to_thread(doc_vectorstore, query, user_id)
 
-            sources = extract_sources_and_pages(descriptions)
+            sources = await to_thread(extract_sources_and_pages, descriptions)
             print(f"[vectorstore]: sources extracted: {sources}")
 
             # initiate sources_sessions dictionary:
@@ -504,7 +506,7 @@ async def call_8020_function(messages, func_call, user_id=None, websocket=None):
             query = parsed_output.get("query", "")
             print(f"\n[ai_idea_generator]:query: {query}")
 
-            descriptions = ai_app_ideation(query)
+            descriptions = await to_thread(ai_app_ideation, query)
 
             max_tokens = 1000
             current_token_count = 0
@@ -622,7 +624,8 @@ async def call_8020_function(messages, func_call, user_id=None, websocket=None):
             else:
                 conversation_history = None
 
-            launch_deck = generate_prs(
+            launch_deck = await to_thread(
+                generate_prs,
                 user_id,
                 query,
                 no_pages,

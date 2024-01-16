@@ -28,7 +28,7 @@ def gpt4_orchestrator(prompt, model="gpt-4-1106-preview"):
 
 def slide_skeleton(num_slides):
     """based on no. of slides create structure"""
-    num_slides = int(num_slides)
+    num_slides = max(3, min(int(num_slides), 5))
     slides = [
         {
             "slide_number": 1,
@@ -50,7 +50,7 @@ def slide_skeleton(num_slides):
             {
                 "slide_number": i,
                 "description": "body-slide",
-                "title": "write title of this slide followed by line break and subtitle",
+                "title": "write title of this slide very succintly followed by line break and subtitle",
                 "object": "write here comprehensive answer to user query not just slide introduction but go deep using additional information be comprehensive and in one string max 500 tokens no line breaks",
             }
         )
