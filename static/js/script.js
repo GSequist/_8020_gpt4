@@ -26,7 +26,6 @@
     }
 
     const userId = getUserId();
-    // const socket = new WebSocket(`ws://localhost:8000/ws/${userId}`);
     const socket = new WebSocket(`wss://${location.host}/ws/${userId}`);
 
     socket.addEventListener('open', function (event) {
