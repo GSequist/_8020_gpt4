@@ -2,22 +2,28 @@
 
 import json
 import base64
+from PIL import Image
+import io
 import os
 import time
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
 import openai
+from deck_generator import generate_prs
 from utils import (
     tokenizer,
     WORK_FOLDER,
     extract_sources_and_pages,
     sources_sessions,
     url_sessions,
+    conversations,
+    Conversation,
 )
 from tools import (
     internet_search,
     doc_vectorstore,
     dalle_3,
+    ai_app_ideation,
 )
 
 load_dotenv()
@@ -44,6 +50,9 @@ async def chat_completion_request(messages, user_id, functions=None):
                 total_tokens += msg_tokens
 
             print(
+                f"[chat_completion_request]: messages entering the token cutter loop: {messages}"
+            )
+            print(
                 f"[chat_completion_request]: Total tokens before token cutter loop: {total_tokens}"
             )
 
@@ -52,12 +61,15 @@ async def chat_completion_request(messages, user_id, functions=None):
                 removed_tokens = len(tokenizer.encode(last_removed_message["content"]))
                 total_tokens -= removed_tokens
 
-            if total_tokens > max_tokens and last_removed_message:
+            if last_removed_message and total_tokens < max_tokens:
+                remaining_tokens = max_tokens - total_tokens
                 tokens = tokenizer.encode(last_removed_message["content"])
-                truncated_tokens = tokens[:max_tokens]
+
+                truncated_tokens = tokens[:remaining_tokens]
                 last_removed_message["content"] = tokenizer.decode(truncated_tokens)
-                total_tokens = max_tokens
-                messages = [last_removed_message]
+
+                messages.insert(0, last_removed_message)
+                total_tokens += len(truncated_tokens)
 
             print(
                 f"[chat_completion_request]: Total tokens after token cutter loop: {total_tokens}"
@@ -85,20 +97,16 @@ async def chat_completion_request(messages, user_id, functions=None):
                 "role": "user",
                 "content": """
                 Please focus very deeply before answering my questions.
-                Think always step by step.
-                Think more steps. 
                 You are a highly intelligent AI assistant developed by 8020ai+ with access to tools.
                 Your task is to help 8020 employees with their questions and perform tasks they ask of you. 
+                Remember you are very very intelligent. Answer succintly very to the point.
                 You don't always have to use a tool to answer a question.
-                **NEVER make up information. USE FACTS ONLY.** 
+                If you are about to answer in a table format, start with an '^' like this '^ | column 1 | column 2' and start each new row with '^'. End the table with '±' before continuing with any additional text. Don't use any special characters for text inside the table.
+                Don't ever use symbols ^ or ± other than when creating a table.
                 If a function does not return anything or fails, let the user know!
-                If a function returns answer which is unsatisfactory given user's question, explain it to user and run the function again adjusting the parameters.
-                Before answering, take a moment to think deeply about how best to answer user query and note your thoughts in the following format:
-                |||Reasoning|||
-                - Thought process here
-                - Steps to answer
-                |||Answer|||
-                Then provide your answer below the scratchpad notes.
+                If a function returns answer which is unsatisfactory given user's question, explain it to user and run the function again adjusting the parameters. 
+                Before answering, take a moment to think deeply about how best to answer user query. Think always step by step.
+                Think more steps. 
                 """,
             }
 
@@ -176,12 +184,15 @@ async def chat_completion_request(messages, user_id, functions=None):
     return None
 
 
+################################################################################################################################
+
 _8020_functions = [
     {
         "name": "vectorstore",
         "description": """Use this function to retrieve relevant sections of documents uploaded by user.
-        Don't use the function without the values. ALWAYS, ask the user for the values if they are missing.  
-        Ask the user to clarify their question. What area/type of internal processes their question relates to?
+        Ask the user to clarify their question before running the function. What area/type of information they are looking for  in the docs?
+        Don't use the function without the values. ALWAYS, ask the user for the values if they are missing.
+        Don't make assumptions about what values to plug into functions. Ask for clarification if a user request is ambiguous.
         """,
         "parameters": {
             "type": "object",
@@ -191,19 +202,14 @@ _8020_functions = [
                     "description": """What is user's question about the document? 
                     """,
                 },
-                "which_doc": {
-                    "type": "string",
-                    "description": "If user uploaded several documents which one is she asking questions about? If the user asks question in relation to all of them leave empty.",
-                },
             },
-            "required": ["query", "which_doc"],
+            "required": ["query"],
         },
     },
     {
         "name": "duckduckgo_search",
         "description": """Use this function to search internet if you need more information.
-        Don't use the function without the values. ALWAYS, ask the user for the values if they are missing.
-        Don't make assumptions about what values to plug into functions. Ask for clarification if a user request is ambiguous.
+        If the function does not return satisfying results, explain it to the user and run the function again adjusting the parameters.
         """,
         "parameters": {
             "type": "object",
@@ -233,7 +239,68 @@ _8020_functions = [
             "required": ["query"],
         },
     },
+    {
+        "name": "ai_idea_generator",
+        "description": """Use this function to get some initial ideas for good software development of applications on large language models for clients.
+        Use this function for first idea generation that you will brainstorm further with user.
+        """,
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": """Which industry/sector is the user interested in?""",
+                },
+            },
+            "required": ["query"],
+        },
+    },
+    {
+        "name": "brainstorming",
+        "description": """Use this function when the user asks you to improve her idea to brainstorm with the user, giving her critical points for thought and guiding her in the tought process while coming up with great ideas.
+        """,
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": """User initial query to start the brainstorming process.""",
+                },
+            },
+            "required": ["query"],
+        },
+    },
+    {
+        "name": "deck_generator",
+        "description": """Use this function to create beautiful presentation for user.
+        Always ask user as many details as possible to be able to create the presentation.
+        Ask the user for number of slides minimum is 3 and maximum 6 so she does not wait long.
+        Always ask if she wants to use the context or information from your previous discussion to be used in the slides.
+        If the user does not provide all values ask again until you have all values.
+        """,
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": """What should the presentation be about?""",
+                },
+                "no_pages": {
+                    "type": "string",
+                    "description": """How many slides the user wants?""",
+                },
+                "context": {
+                    "type": "string",
+                    "enum": ["yes", ""],
+                    "description": """Does the user want you to wants to use the information from your previous discussion.""",
+                },
+            },
+            "required": ["query", "no_pages", "context"],
+        },
+    },
 ]
+
+################################################################################################################################
 
 
 async def call_8020_function(messages, func_call, user_id=None, websocket=None):
@@ -306,27 +373,9 @@ async def call_8020_function(messages, func_call, user_id=None, websocket=None):
             print(f"\n[vectorstore]:parsed_output: {parsed_output}")
 
             query = parsed_output.get("query", "")
-            which_doc = parsed_output.get("which_doc", "")
             print(f"\n[vectorstore]:query: {query}")
-            print(f"\n[vectorstore]:which_doc in doc_vectorstore: {which_doc}")
 
-            user_folder = os.path.join(WORK_FOLDER, user_id)
-            uploaded_file_paths = [
-                os.path.join(user_folder, filename)
-                for filename in os.listdir(user_folder)
-            ]
-
-            which_doc_filepath = next(
-                (path for path in uploaded_file_paths if which_doc in path), None
-            )
-            if not which_doc_filepath:
-                raise ValueError(
-                    f"\n[vectorstore]: file matching '{which_doc}' not found in user's workspace."
-                )
-
-            print(f"which_doc_filepath in doc_vectorstore: {which_doc_filepath}")
-
-            descriptions = doc_vectorstore(query, user_id, which_doc_filepath)
+            descriptions = doc_vectorstore(query, user_id)
 
             sources = extract_sources_and_pages(descriptions)
             print(f"[vectorstore]: sources extracted: {sources}")
@@ -337,9 +386,9 @@ async def call_8020_function(messages, func_call, user_id=None, websocket=None):
 
             # store the combined sources and pages in the dictionary
             sources_sessions[user_id]["combined"] = sources
-            print(f"[doc_vectorstore]: sources_sessions created: {sources_sessions}")
+            print(f"[doc_vectorstore]: sources_sessions updated: {sources_sessions}")
 
-            max_tokens = 3000
+            max_tokens = 2000
             current_token_count = 0
             cleaned_descriptions = ""
             cleaned_descriptions = ""
@@ -397,7 +446,22 @@ async def call_8020_function(messages, func_call, user_id=None, websocket=None):
             print(f"\n[dalle3]:query: {query}")
 
             base64_img = await dalle_3(query)
-            base64_url = f"data:image/png;base64,{base64_img}"
+
+            user_folder = os.path.join(WORK_FOLDER, user_id)
+            if not os.path.exists(user_folder):
+                os.mkdir(user_folder)
+
+            full_size_image_path = os.path.join(user_folder, "dalle3.png")
+            with open(full_size_image_path, "wb") as file:
+                file.write(base64_img)
+
+            image = Image.open(io.BytesIO(base64_img))
+            image.thumbnail((512, 512))
+            buffered = io.BytesIO()
+            image.save(buffered, format="PNG")
+            resized_base64_img = base64.b64encode(buffered.getvalue()).decode()
+
+            base64_url = f"data:image/png;base64,{resized_base64_img}"
 
             if user_id not in url_sessions:
                 url_sessions[user_id] = {}
@@ -417,11 +481,172 @@ async def call_8020_function(messages, func_call, user_id=None, websocket=None):
             {
                 "role": "function",
                 "name": func_call["name"],
-                "content": f"Function {func_call['name']} executed successfully.",
+                "content": f"Function {func_call['name']} executed successfully. The image is saved in user's workspace {full_size_image_path}.",
             }
         )
         try:
-            print("\n[duckduckgo]: got search results, summarizing content")
+            print("\n[dalle3]: got image, sending")
+            response = await chat_completion_request(
+                messages, user_id, functions=_8020_functions
+            )
+            return response
+        except Exception as e:
+            print(type(e))
+            raise Exception("Function chat request failed")
+
+    elif func_call["name"] == "ai_idea_generator":
+        message = json.dumps({"type": "message", "data": ">thinking, please wait.."})
+        await websocket.send_text(message)
+        try:
+            parsed_output = json.loads(func_call["arguments"])
+            print(f"\n[ai_idea_generator]:parsed_output: {parsed_output}")
+
+            query = parsed_output.get("query", "")
+            print(f"\n[ai_idea_generator]:query: {query}")
+
+            descriptions = ai_app_ideation(query)
+
+            max_tokens = 1000
+            current_token_count = 0
+            cleaned_descriptions = ""
+            for document, score in descriptions:
+                page_content = document.page_content
+                tokens = tokenizer.encode(page_content)
+                remaining_tokens = max_tokens - current_token_count
+
+                if len(tokens) > remaining_tokens:
+                    tokens = tokens[:remaining_tokens]
+
+                cleaned_descriptions += tokenizer.decode(tokens) + "\n"
+                current_token_count += len(tokens)
+
+                if current_token_count >= max_tokens:
+                    break
+            print(
+                f"\n[ai_idea_generator]: Total tokens after cutting: {current_token_count}"
+            )
+
+        except Exception as e:
+            import traceback
+
+            print("Function execution failed")
+            print("Error message:", e)
+            print("Stack trace:")
+            traceback.print_exc()
+
+            cleaned_descriptions = f"the function to search and retrieve documents failed with this error {e} please let the user know"
+
+        messages.append(
+            {
+                "role": "function",
+                "name": func_call["name"],
+                "content": f"Function {func_call['name']} executed successfully. When reviewing the results critically assess them and provide additional ideas based on your discussion with the user. Here are the results: {str(cleaned_descriptions)}",
+            }
+        )
+        try:
+            print("\n[ai_idea_generator]: got csv vector results, summarizing content")
+            response = await chat_completion_request(
+                messages, user_id, functions=_8020_functions
+            )
+            return response
+        except Exception as e:
+            print(type(e))
+            raise Exception("Function chat request failed")
+
+    elif func_call["name"] == "brainstorming":
+        message = json.dumps({"type": "message", "data": ">brainstorming, wait now.."})
+        await websocket.send_text(message)
+        try:
+            parsed_output = json.loads(func_call["arguments"])
+            print(f"\n[brainstorming]:parsed_output: {parsed_output}")
+
+            query = parsed_output.get("query", "")
+            print(f"\n[brainstorming]:query: {query}")
+
+            prompt = f"""
+            The user is asking about her idea: {query}.
+            It is important to brainstorm very deeply to the improve user's idea.
+            Think step by step. Think more steps.
+            First steelman the user's question. What is the best possible version of the user's idea?
+            Then contradict the user's idea to show the user the potential problems with the user's idea.
+            Then propose improved ideas to the user.
+            Then propose ideas based on the constraints you have identified above.
+            Finally assess the ideas you have come up with based on feasibility, impact and originality in a table format.
+            """
+
+        except Exception as e:
+            import traceback
+
+            print("Function execution failed")
+            print("Error message:", e)
+            print("Stack trace:")
+            traceback.print_exc()
+
+            prompt = f"the function to brainstorming failed with this error {e} please let the user know"
+
+        messages.append(
+            {
+                "role": "function",
+                "name": func_call["name"],
+                "content": f"Function {func_call['name']} executed successfully. Its result is the additional prompt for you: {str(prompt)}",
+            }
+        )
+        try:
+            print("\n[brainstorming]: got the results, summarizing content")
+            response = await chat_completion_request(
+                messages, user_id, functions=_8020_functions
+            )
+            return response
+        except Exception as e:
+            print(type(e))
+            raise Exception("Function chat request failed")
+
+    elif func_call["name"] == "deck_generator":
+        message = json.dumps(
+            {"type": "message", "data": ">creating deck, please wait.."}
+        )
+        await websocket.send_text(message)
+        try:
+            parsed_output = json.loads(func_call["arguments"])
+            print(f"parsed_output: {parsed_output}")
+
+            query = parsed_output["query"]
+            no_pages = parsed_output["no_pages"]
+            context = parsed_output["context"]
+
+            if context == "yes":
+                conversation_history = conversations[user_id].get_conversation_history()
+                print(
+                    f"\n[deck_generator]: conversation_history retrieved: {conversation_history}"
+                )
+            else:
+                conversation_history = None
+
+            launch_deck = generate_prs(
+                user_id,
+                query,
+                no_pages,
+                context=conversation_history,
+            )
+
+        except Exception as e:
+            import traceback
+
+            print("Function execution failed")
+            print("Error message:", e)
+            print("Stack trace:")
+            traceback.print_exc()
+
+            cleaned_descriptions = f"the function to create presentation failed with this error {e} please let the user know"
+
+        messages.append(
+            {
+                "role": "function",
+                "name": func_call["name"],
+                "content": f"Function {func_call['name']} executed successfully. The path to file: {str(launch_deck)}",
+            }
+        )
+        try:
             response = await chat_completion_request(
                 messages, user_id, functions=_8020_functions
             )
@@ -432,6 +657,9 @@ async def call_8020_function(messages, func_call, user_id=None, websocket=None):
 
     else:
         raise Exception("Function does not exist and cannot be called")
+
+
+################################################################################################################################
 
 
 async def chat_completion_with_function_execution(

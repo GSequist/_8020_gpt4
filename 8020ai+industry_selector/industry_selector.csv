@@ -1,0 +1,62 @@
+industry,app,note
+All Industries,"Back-office ""Forever"" Analyst","Application that helps with processing internal data from various documents / data sources and fill tables, documents and provide conclusions:
+
+-review of past accounting records and answering questions for auditors
+-review past historic metadata and answer questions
+-help filling out excels based on other data 
+-help generating very specific documents in their template under their brand based on any information the AI has access to"
+All Industries,Internal Knowledge Management,"Application that compresses all internal knowledge spread acros confluence, private cloud, mainframe, thousands of documents into a small answering box:
+
+-employees have all previous experience at the tip of their fingers
+-sprint to professional go
+-forgotten knowledge re-discovered
+-much enhanced quality of future documents ,materials, presentations, other deliverables"
+All Industries,Key Personnel Lookup,"Fed with a directory and past work experience of all employees across and enterprise, the application immediately responds suggesting the best possible person to go to:
+
+""who has worked on process x,y,z in past""
+""who can code in python""
+who was on last year's audit"""
+All Industries,External Knowledge Management,"Application that is fed external laws, regulations, standards relevant for a particular business / industry to instantly explain answer questions to employees."
+All Industries,GPT4 level chatbot,GPT4 level human intelligence chatbot on website or in app with access to tools like product cataloge and more
+All Industries,Sentiment Analysis,"Application that is fetching vast data from social media and other sources (news articles) and assessing sentiment from the perspective of the brand / a company.
+
+Higher level analysis based on the granular analysis above for the top management to have a bird view of."
+All Industries,GPT4 Regulatory / Legal Analyst,Application ingesting applicable legislation from online databank + any public regulation if applicable to a particular company and answering questions and solving internal company questions on the fly
+All Industries,Integration of GPT4 into existing software / infrastructure,"Most people think of chatbots but this is passe. 2024 will see more ways of making GPT4 invisible making work in the background.
+
+This will strongly depend on client and industry but examples:
+
+-internal accounting system shared among several employees maintained edited by GPT4
+-automaton that is reviewing CVs / CLs and summarizing candidates and selecting for HR
+-project management (our squadcheck) GPT4 is retrieving info about people and their utilization and suggesting to manager who what"
+All Industries,GPT4 Training Generator,App goes through boring internal documents and generates onboarding / employee training material &/or then trains based upon via discussion + voice.
+All Industries,Document Generator,"Despite MS Copilot, there will be need for very tailored custom solution where for example Audi has an app that uses their pptx template and generates immaculate presentation on various topics as requested + leveraging internal information."
+Food,Personalized Marketing,"Tailors promotions based on customer preferences, purchase history, and behavior. Enhances customer engagement and drives sales through personalized offers and recommendations."
+Food,Nutritional Analysis,Analyzes food composition and nutritional content to meet industry standards and consumer expectations.
+Automotive,Predictive Maintenance,"Anticipates maintenance needs by analyzing sensor data and machine learning algorithms. Helps prevent breakdowns, extend equipment lifespan, and reduce maintenance costs."
+Automotive,Car Manual Compressed in GPT4 Application,Imagine car manual that you can talk to in voice
+Health,Diagnostics and Imaging,Improves accuracy and speed of medical diagnostics through AI-driven image analysis. Enables early disease detection and more precise treatment planning.
+Health,Personalized Medicine,"Tailors treatment plans based on individual patient data, including genetics and medical history. Enhances patient outcomes and minimizes adverse effects."
+Health,Virtual Health Assistants,"Enhances patient engagement and provides 24/7 support through AI-powered virtual assistants. Offers medication reminders, health advice, and appointment scheduling."
+Retail,Customer Segmentation,"Identifies and targets specific customer segments based on demographics, behavior, and preferences. Optimizes marketing campaigns for better ROI."
+Finance,GPT4 Trading Analyst,"Analyze sentiment, read relevant news + fetch newsdeed. Monitor price and give regular analysis and point to things to analyze."
+Finance,Mortgage & Credit Application Automaton,"Filling out mortgage applications / loan applications entails huge amount of document collecting and formulaire filling out.
+
+THIS can (and will by many future AIfintechs) be done by LLMs."
+Finance,Wealth Management / Personal Finance GPT4 Analyst,"Application that ingests all previous bank / fund documents, materials etc. and an employee before that meeting with a client performs a discussion with the app rather than trying to remember and then studying for horus everything that could be relevant."
+Technology,Market Analysis,Conducts advanced market analysis for technology companies with AI-powered tools. Provides insights into market trends and competitive intelligence.
+Technology,Predictive Analytics,"Utilizes historical data to predict future technology trends, enabling informed investment and innovation decisions."
+Technology,Content Recommendation,"Recommends personalized content to technology users, increasing engagement and user retention."
+Technology,GPT4 Level Analyst,Application we connect to external research paper databank like arxiv to continuously ingest new papers on certain subject research it and discuss the papers with employees of a tech co. to gain immediate insights on the fly.
+E-commerce,Customer Behavior Analysis,"Analyzes online shopping behavior to predict and optimize user experiences, leading to increased sales and conversion rates."
+E-commerce,Price Optimization,"Adjusts product pricing in real-time based on demand and competitor pricing data, optimizing revenue."
+E-commerce,Chatbots and Virtual Assistants,"Enhances e-commerce customer service with AI-powered chatbots and virtual assistants, improving user satisfaction and sales.
+GPT4 app with chatting at human-level intelligence with a pre-defined role to play and access to tools like product catalogue"
+Travel,Personalized Travel Recommendations,"Recommends personalized travel itineraries, accommodations, and experiences based on user preferences, increasing bookings and customer loyalty."
+Travel,GPT4 Booking App,GPT4 Application that a customer chats with and it books a trip and recommends everything needed around.
+Education,Adaptive Learning,"Personalizes educational content and assessments for students, improving learning outcomes and engagement."
+Education,Student Performance Analytics,Analyzes student data to identify at-risk students and tailor interventions to improve academic success rates.
+Education,Virtual Classrooms,"Provides virtual classrooms and online education platforms, enabling remote learning and education accessibility."
+Real Estate,Property Maintenance GPT4 Chatbot,"Tenants can report maintenance issues through a natural language interface, and GPT-4 can categorize and prioritize these requests, even contacting service providers automatically."
+Real Estate,First-Level Legal Assistant,"Like lexion.ai but with focus on particular client and e.g. past contracts the application will help draft, understand and narrate legal contracts for advisors."
+Real Estate,Leads GPT4 Manager,"App interacts with potential leads, qualifies them based on their preferences and budget, and routes them to the appropriate agent or property listing."

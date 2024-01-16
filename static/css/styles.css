@@ -46,7 +46,7 @@
       }
 
       .userMessage {
-        font-weight: bolder;
+        font-weight: bold;
         color: #EB0173;
       }
 
@@ -134,7 +134,7 @@
         padding: 5px;
         color: rgb(0, 0, 0);
         text-align: left;
-        text-shadow: 0 0 5px rgba(38, 38, 38, 0.8);
+        text-shadow: #000000;
       }
 
       .typing-cursor {
@@ -150,6 +150,30 @@
           to {
               visibility: hidden;
           }
+      }
+
+      table {
+        border-collapse: collapse;
+        width: 100%;
+      }
+
+      table,
+      th,
+      td {
+        border: 1px solid #797979;
+      }
+
+      th,
+      td {
+        padding: 8px;
+        text-align: left;
+      }
+
+      .source-item {
+      padding: 1px;
+      margin-bottom: 1px;
+      border-bottom: .5px solid #eee;
+      font-size: .8em;
       }
 
       .largeFont {

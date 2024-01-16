@@ -7,6 +7,7 @@ from openai import AsyncOpenAI
 from langchain_community.tools import DuckDuckGoSearchRun
 from langchain_community.vectorstores import FAISS
 from langchain.embeddings.openai import OpenAIEmbeddings
+from langchain_community.document_loaders import CSVLoader
 
 load_dotenv()
 
@@ -26,19 +27,10 @@ def doc_vectorstore(query: str, user_id: str, which_doc_filepath: str = None) ->
         print(f"[doc_vectorstore]: FAISS index loaded for user {user_id}")
 
         if user_specific_db:
-            if which_doc_filepath:
-                print(f"[doc_vectorstore]: inserting: {which_doc_filepath}")
-                filter_param = dict(source=which_doc_filepath)
-            else:
-                print(
-                    "[doc_vectorstore]: No specific filepath, running on entire vectorstore"
-                )
-                filter_param = {}
-
             retrieval = user_specific_db.similarity_search_with_score(
-                query, k=20, filter=filter_param
+                query,
+                k=20,
             )
-
             # sort by score
             sorted_retrieval = sorted(retrieval, key=lambda x: x[1], reverse=True)
             print(
@@ -83,4 +75,21 @@ async def dalle_3(query: str):
         response_format="b64_json",
     )
 
-    return image_response.data[0].b64_json
+    return base64.b64decode(image_response.data[0].b64_json)
+
+
+#####################################################################################################
+## AI app ideation
+def ai_app_ideation(query: str):
+    """generate app ideas based on user query"""
+    loader = CSVLoader(
+        file_path="8020ai+industry_selector/industry_selector.csv",
+        csv_args={"delimiter": ","},
+        encoding="utf-8",
+    )
+    data = loader.load()
+    embeddings = OpenAIEmbeddings()
+    db = FAISS.from_documents(data, embeddings)
+    retrieval = db.similarity_search_with_score(query, k=10)
+    sorted_retrieval = sorted(retrieval, key=lambda x: x[1], reverse=True)
+    return sorted_retrieval

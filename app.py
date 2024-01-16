@@ -5,13 +5,13 @@ from urllib.parse import unquote
 import base64
 import gc
 from fastapi import FastAPI, WebSocket, Request, WebSocketDisconnect, HTTPException
+from fastapi import FastAPI, UploadFile, File
 from fastapi.responses import FileResponse
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 import shutil
 import uvicorn
-from utils import Conversation
 import json
 import asyncio
 from function_caller import chat_completion_with_function_execution
@@ -19,6 +19,9 @@ from ingest import process_documents
 from utils import (
     Conversation,
     url_sessions,
+    sources_sessions,
+    user_sessions,
+    conversations,
     WORK_FOLDER,
 )
 
@@ -26,11 +29,6 @@ from utils import (
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
-
-
-user_sessions = {}
-sources_sessions = {}
-conversations = {}
 
 
 ############################################################################################################
@@ -70,45 +68,8 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str):
             data = await websocket.receive_text()
             data_json = json.loads(data)
 
-            # handle file upload
-            if data_json.get("type") == "file_upload":
-                file_name = data_json["file_name"]
-                file_data = data_json["file_data"]
-                user_folder = os.path.join(WORK_FOLDER, user_id)
-                file_path = os.path.join(user_folder, file_name)
-
-                os.makedirs(os.path.dirname(file_path), exist_ok=True)
-
-                with open(file_path, "wb") as file:
-                    file.write(base64.b64decode(file_data))
-
-                process_documents(user_id, user_folder)
-
-                if not os.path.exists(file_path):
-                    message = json.dumps(
-                        {
-                            "type": "file_upload_response",
-                            "data": ">file was uploaded, but there was error processing it, sorry..",
-                            "status": "error",
-                            "fileName": file_name,
-                        }
-                    )
-                    await websocket.send_text(message)
-                    print(
-                        f"\n[websocket_endpoint]: failed processing file: {file_name}"
-                    )
-                else:
-                    message = json.dumps(
-                        {
-                            "type": "file_upload_response",
-                            "data": "",
-                            "status": "success",
-                        }
-                    )
-                    await websocket.send_text(message)
-
             # handle other types of messages
-            elif data_json.get("type") == "request_previous_conversations":
+            if data_json.get("type") == "request_previous_conversations":
                 print("[websocket_endpoint]: requesting previous conversations")
                 await send_previous_conversations(user_id, websocket)
             else:
@@ -145,6 +106,17 @@ async def list_files_for_user(user_id: str):
         return []
     files = os.listdir(user_folder)
     return files
+
+
+@app.post("/upload/{user_id}")
+async def upload_file(user_id: str, file: UploadFile = File(...)):
+    file_path = f"{WORK_FOLDER}/{user_id}/{file.filename}"
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    process_documents(user_id, os.path.dirname(file_path))
+    return {"status": "success", "fileName": file.filename}
 
 
 @app.delete("/delete/{user_id}/{file_name}")
@@ -250,12 +222,12 @@ async def handle_message(user_id, data, websocket):
 
         if user_id in sources_sessions:
             sources = sources_sessions[user_id]
-            message = json.dumps({"type": "response", "data": "", "sources": sources})
+            message = json.dumps({"type": "sources", "data": "", "sources": sources})
             await websocket.send_text(message)
             print(f"\n[handle_message]: sources emitted: {sources}")
 
             # clear sources
-            sources_sessions[user_id] = []
+            sources_sessions[user_id] = {"combined": []}
 
         conversations[user_id].add_message("assistant", compl_response)
 

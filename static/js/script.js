@@ -75,7 +75,7 @@
         body.style.backgroundColor = 'rgb(50, 50, 50)';
         giantText.style.color = 'rgb(255, 255, 255)';
         toggleTitle.style.color = 'rgb(255, 255, 255)';
-        toggleTitle.innerHTML = 'dark_is_beautiful';
+        toggleTitle.innerHTML = '_dark_is_beautiful';
         logo.src = 'static/logo_elements_white.png';
         uploadButtonImage.src = 'static/upload_8020_white.png';
         submitButtonImage.src = 'static/send_8020_white.png';
@@ -187,6 +187,22 @@
     });
     
     ////////////////////////////////////////////////listening to backend
+    // helper for table rendering
+    function createAndAppendTable(outputElement) {
+        const table = document.createElement('table');
+        outputElement.appendChild(table);
+        return table;
+    }
+
+    function isTableFormat(data) {
+        return data.includes('^');
+    }
+
+    let tableElement = null; 
+    let isProcessingTable = false; 
+    let currentRow = null; 
+    let currentCell = null;
+    
     // listen for response from server
     socket.addEventListener('message', function (event) {
         const data = JSON.parse(event.data);
@@ -211,23 +227,64 @@
                 console.log('Error received.');
                 output.innerHTML += `<span class="error">${data.error}</span>`;
             } else {
+            if (data.data.includes('±')) {
+                isProcessingTable = false;
+                tableElement = null; 
+                currentRow = null; 
+                currentCell = null;
+                data.data = data.data.replace('±', '');
+            }
+
+            if (!isProcessingTable && isTableFormat(data.data)) {
+                isProcessingTable = true;
+                tableElement = createAndAppendTable(output);
+                currentRow = document.createElement('tr');
+                tableElement.appendChild(currentRow);
+            }
+
+            if (isProcessingTable) {
+                let parts = data.data.split('^');
+                parts.forEach((part, index) => {
+                    let cells = part.split('|');
+                    cells.forEach((cell, cellIndex) => {
+                        if (cell) {
+                            if (!currentCell) {
+                                currentCell = document.createElement('td');
+                                currentRow.appendChild(currentCell);
+                            }
+                            currentCell.textContent += cell;
+                        }
+
+                        if (cellIndex !== cells.length - 1) {
+                            currentCell = document.createElement('td');
+                            currentRow.appendChild(currentCell);
+                        }
+                    });
+
+                    if (index !== parts.length - 1) {
+                        currentRow = document.createElement('tr');
+                        tableElement.appendChild(currentRow);
+                        currentCell = null;
+                    }
+                });
+            } else {
                 let messageContent = data.data;
                 if (messageContent.includes('\n')) {
                     messageContent = messageContent.replace(/\n/g, '<br>');
                 }
                 cursorSpan.insertAdjacentHTML('beforebegin', `<span>${messageContent}</span>`);
             }
-            output.scrollTop = output.scrollHeight;
+        }
+        output.scrollTop = output.scrollHeight;
         }
     });
 
-
-    //listener for images rendering
+    //helper for images rendering
     socket.addEventListener('message', function (event) {
         const data = JSON.parse(event.data);
 
         if (data.type === 'response' && data.payload && data.payload.img_url) {
-
+            output.appendChild(document.createElement('br'));
             const imgElement = document.createElement('img');
             imgElement.src = data.payload.img_url; 
             output.appendChild(imgElement);
@@ -245,7 +302,7 @@
                 // check if there are files 
                 if (files.length > 0) {
                     var message = document.createElement('p');
-                    message.textContent = ">your currently uploaded files:";
+                    message.textContent = ">your files:";
                     output.appendChild(message);
                 }
                 // loop through the file list and create download links
@@ -361,6 +418,10 @@
                 gifSrc = isWhiteBackground ? 'static/gif_thinking.gif' : 'static/gif_thinking_white.gif'; 
             } else if (data.data.includes('image')) {
                 gifSrc = isWhiteBackground ? 'static/gif_paint_black.gif' : 'static/gif_paint_white.gif'; 
+            } else if (data.data.includes('brainstorming')) {
+                gifSrc = isWhiteBackground ? 'static/gif_brainstorming_black.gif' : 'static/gif_brainstorming_white.gif'; 
+            } else if (data.data.includes('deck')) {
+                gifSrc = isWhiteBackground ? 'static/gif_pptx.gif' : 'static/gif_pptx.gif'; 
             }
 
             const gifContainer = document.getElementById('process-gif-container');
@@ -369,6 +430,32 @@
             output.scrollTop = output.scrollHeight;
         }
     });
+
+    // listen for 'sources' event
+    socket.addEventListener('message', function(event) {
+        const data = JSON.parse(event.data);
+
+        if (data.type === 'sources') {
+            const sources = data.sources.combined;
+            displaySources(sources);
+        }
+    });
+
+    function displaySources(sources) {
+        const sourcesContainer = document.getElementById('sources-container');
+        var br = document.createElement('br');
+        output.appendChild(br);
+        output.appendChild(sourcesContainer);
+        sourcesContainer.innerHTML = ''; 
+
+        sources.forEach(source => {
+            const sourceElement = document.createElement('div');
+            sourceElement.classList.add('source-item');
+            sourceElement.textContent = source;
+            sourcesContainer.appendChild(sourceElement);
+        });
+    }
+
 
     // listen for the end of messages
     socket.addEventListener('message', function (event) {
@@ -445,62 +532,45 @@
     }
     }
 
-    //upload files via websocket
+    // alternative upload files via fetch
     function uploadFile(file) {
-    console.log('uploadFile called');
-    uploadInProgress = true;
-    uploadButton.classList.add('disabled-button');
-
-    // convert the file to Base64
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = function () {
-        let base64File = reader.result.split(',')[1];
-
-        // construct a ws message
-        const wsMessage = {
-        type: 'file_upload',
-        user_id: getUserId(),
-        file_name: file.name,
-        file_data: base64File,
-        };
-
-        // send the ws message
-        socket.send(JSON.stringify(wsMessage));
+        console.log('uploadFile called');
+        uploadInProgress = true;
         input.value = `>uploading ${file.name}...`;
-    };
+        uploadButton.classList.add('disabled-button');
 
-    reader.onerror = function (error) {
-        console.log('error converting file to Base64:', error);
-        input.value = '>error converting file to Base64.';
-        uploadInProgress = false;
-        uploadButton.classList.remove('disabled-button');
-    };
-    }
+        const formData = new FormData();
+        formData.append('file', file);
 
-    // listen for the file_upload_response from the server
-    socket.addEventListener('message', function (event) {
-        const data = JSON.parse(event.data);
-
-        if (data.type === 'file_upload_response') {
+        fetch(`/upload/${getUserId()}`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Upload response:', data);
             uploadInProgress = false;
             uploadButton.classList.remove('disabled-button');
 
             if (data.status === 'success') {
-                input.value = data.data;                
-            } else if (data.status === 'error') {
-                input.value = data.data;   
+                input.value = ""; //clean
+            } else {
+                input.value = `>error during upload of ${file.name}, sorry.`;
                 input.addEventListener('focus', function() {
                     input.value = '';
-                }
-                );            
-            } else {
-                console.log('File info not found or missing element for:', data.fileName);
+                });
             }
+        })
+        .catch(error => {
+            console.error('Error during file upload:', error);
+            input.value = '>error during file upload.';
+            uploadInProgress = false;
+            uploadButton.classList.remove('disabled-button');
+        });
+    }
 
-        }
-    });
-    
+
+        //////////////////////////////////////////////////
         //typewriter effect
         function typeWriter(text, i, id) {
         const outputField = document.getElementById('output');
@@ -522,13 +592,14 @@
             if (!stopTypewriter) {
                 outputField.innerHTML = '';
                 const messages = [
-                'upload your document and ask me a question',
                 'your documents compressed to a Q&A box',
-                'they say i am IQ 140+' ,
-                'distill vast text into instant answers',
+                'they say i am IQ 140+',
+                'tell me your idea and ask me to brainstorm on it',
+                'i can create presentation, try me',
+                'i have many ideas about how AI can be used for your clients, ask me',
                 'i am good at images too',
-                'i change boring PDFs into thrilling conversations .. try me!',
                 'google? aww that is so 2022, ask me instead',
+                'please remember if you leave the page open too long your browser forgets your id, your docs will be deleted and ill forget our conversation',
                 ];
                 const index = messages.indexOf(text);
                 text = messages[(index + 1) % messages.length];

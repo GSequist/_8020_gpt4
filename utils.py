@@ -26,14 +26,12 @@ def get_current_user_id(request_user_id):
 tokenizer = tiktoken.get_encoding("cl100k_base")
 
 ############################################################################################################
-##url sessions
+##sessions
 
 url_sessions = {}
-
-############################################################################################################
-##sources_sessions
-
 sources_sessions = {}
+user_sessions = {}
+conversations = {}
 
 ############################################################################################################
 ## work folder
@@ -49,17 +47,22 @@ def extract_sources_and_pages(results):
     print(f"Extracting sources and pages from results")
     sources_and_pages = []
 
-    for result in results:
-        full_source = result[0].metadata.get("source", None)
-        page = result[0].metadata.get("page", None)
+    try:
+        for result in results:
+            full_source = result[0].metadata.get("source", None)
+            page = result[0].metadata.get("page", None)
+            source_filename = os.path.basename(full_source)
 
-        source_filename = os.path.basename(full_source)
-
-        if source_filename and page is not None:
-            combined = f"{source_filename}\nPage: {page}"
-            sources_and_pages.append(combined)
-        else:
-            print(f"\n[extract_sources_and_pages]: source or page not found in content")
+            if source_filename and page is not None:
+                combined = f"{source_filename}\nPage: {page}"
+                sources_and_pages.append(combined)
+            else:
+                print(
+                    f"\n[extract_sources_and_pages]: source or page not found in content"
+                )
+    except Exception as e:
+        print(f"\n[extract_sources_and_pages]: error: {e}")
+        return None
 
     print(
         f"\n[extract_sources_and_pages]: Sources and pages extracted: {sources_and_pages}"
