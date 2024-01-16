@@ -314,7 +314,6 @@
                 cursorSpan.insertAdjacentHTML('beforebegin', `<span>${messageContent}</span>`);
             }
         }
-        output.scrollTop = output.scrollHeight;
         }
     }
     });
