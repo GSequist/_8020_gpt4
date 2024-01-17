@@ -5,6 +5,13 @@
 
     ////////////////////////////////////////////////////websockets  
 
+
+    //DOM load
+    document.addEventListener('DOMContentLoaded', function () {
+        console.log('DOMContentLoaded event triggered');
+        getUserId();
+    });
+
     //generating userID
     function generateUserId() {
     console.log('Generating new user ID');
@@ -210,9 +217,30 @@
         return codeBlock;
     }
 
+    let backtickSequence = '';
+
     function isCodeFormat(data) {
-        return data.includes('~');
+        // Append new data to the backtickSequence
+        backtickSequence += data;
+
+        // Regular expression to match a sequence of three backticks possibly separated by line breaks
+        const tripleBacktickRegex = /(`\n*\n*`)\n*\n*`/;
+
+        // Check if the accumulated sequence matches the pattern
+        if (tripleBacktickRegex.test(backtickSequence)) {
+            backtickSequence = ''; // Reset the sequence for future checks
+            return true;
+        }
+
+        // If the length of the sequence gets too long without a match, reset it
+        if (backtickSequence.length > 100) { // 100 is an arbitrary limit for reset
+            backtickSequence = '';
+        }
+
+        return false;
     }
+
+
 
     let codeBlockElement = null;
     let isProcessingCode = false;
@@ -229,13 +257,6 @@
                 hasClearedOutput = true;
             }  
             document.getElementById('output').classList.remove('largeFont');
-            
-            if (!cursorSpan) {
-                cursorSpan = document.createElement('span');
-                cursorSpan.id = 'typing-cursor';
-                cursorSpan.classList.add('typing-cursor');
-                output.appendChild(cursorSpan);
-            }
 
             if (data.error) {
                 console.log('Error received.');
@@ -291,7 +312,7 @@
                         isProcessingCode = false;
                     }
                     // Remove the backticks from the data
-                    data.data = data.data.replace('~', '');
+                    data.data = data.data.replace('```', '');
                 }
 
                 if (isProcessingCode) {
@@ -311,6 +332,12 @@
                 if (messageContent.includes('\n')) {
                     messageContent = messageContent.replace(/\n/g, '<br>');
                 }
+                if (!cursorSpan) {
+                    cursorSpan = document.createElement('span');
+                    cursorSpan.id = 'typing-cursor';
+                    cursorSpan.classList.add('typing-cursor');
+                }
+                output.appendChild(cursorSpan);
                 cursorSpan.insertAdjacentHTML('beforebegin', `<span>${messageContent}</span>`);
             }
         }
@@ -646,11 +673,12 @@
                 'they say i am IQ 140+',
                 'tell me your idea and ask me to brainstorm on it..',
                 'i can create presentation, try me..',
+                'please remember if you leave the page open too long your browser forgets your id, your docs will be deleted and ill forget our conversation',
                 'i have many ideas about how AI can be used for your clients, ask me..',
                 'i am good at images too..',
                 'google? aww that is so 2022, ask me instead',
                 'i can do tables, you know..',
-                'please remember if you leave the page open too long your browser forgets your id, your docs will be deleted and ill forget our conversation',
+                'i am ofc fluent in code too..',
                 ];
                 const index = messages.indexOf(text);
                 text = messages[(index + 1) % messages.length];
