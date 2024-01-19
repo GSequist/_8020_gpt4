@@ -72,6 +72,8 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str):
             if data_json.get("type") == "request_previous_conversations":
                 print("[websocket_endpoint]: requesting previous conversations")
                 await send_previous_conversations(user_id, websocket)
+            if data_json.get("type") == "request_last_assistant_message":
+                await send_last_assistant_message(user_id, websocket)
             else:
                 await handle_message(user_id, data_json, websocket)
 
@@ -183,6 +185,25 @@ async def send_previous_conversations(user_id: str, websocket: WebSocket):
             f"\n[send_previous_conversations]: sending previous conversations: {retrieved_conversation_history}"
         )
         await websocket.send_text(message)
+
+
+async def send_last_assistant_message(user_id: str, websocket: WebSocket):
+    last_assistant_message = get_last_message_of_role(
+        conversations[user_id].get_conversation_history(), "assistant"
+    )
+    if last_assistant_message:
+        message = json.dumps(
+            {"type": "last_assistant_message", "data": last_assistant_message}
+        )
+        await websocket.send_text(message)
+
+
+def get_last_message_of_role(conversation_history, role):
+    for message in reversed(conversation_history):
+        if message["role"] == role:
+            print(f"\n[get_last_message_of_role]: last message: {message}")
+            return message
+    return None
 
 
 ############################################################################################################

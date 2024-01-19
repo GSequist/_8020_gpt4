@@ -119,7 +119,7 @@ async def chat_completion_request(messages, user_id, functions=None):
             )
 
             response = await client.chat.completions.create(
-                model="gpt-4-1106-preview",
+                model="gpt-4",
                 messages=messages,
                 functions=functions,
                 function_call="auto",

@@ -156,6 +156,12 @@
               visibility: hidden;
           }
       }
+      
+      .copyButton {
+        cursor: pointer;
+        width: 15px;
+        visibility: hidden; 
+      }
 
       table {
         border-collapse: collapse;

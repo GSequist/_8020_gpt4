@@ -66,6 +66,7 @@
     const giantText = document.querySelector('.giant-text');
     const toggleTitle = document.querySelector('.toggleTitle');
     const logo = document.querySelector('.logo');
+    const copyButton = document.querySelector('.copyButton');
 
     ////////////////////////////////////////////////////styling
     // toggle circle buttons logic
@@ -175,6 +176,10 @@
         }
         const message = input.value;
         submit.disabled = true;
+        const copyButton = document.querySelector('.copyButton');
+            if (copyButton) {
+                copyButton.style.visibility = 'hidden';
+            }
         input.value = '';
         if (!message) return;
             const messageData = JSON.stringify({ message: message, user_id: getUserId() });
@@ -218,6 +223,8 @@
     }
 
     let backtickSequence = '';
+    let codeBlockElement = null;
+    let isProcessingCode = false;
 
     function isCodeFormat(data) {
         // Append new data to the backtickSequence
@@ -240,10 +247,6 @@
         return false;
     }
 
-
-
-    let codeBlockElement = null;
-    let isProcessingCode = false;
 
     // listen for response from server
     socket.addEventListener('message', function (event) {
@@ -345,7 +348,6 @@
     }
     });
 
-
     //helper for images rendering
     socket.addEventListener('message', function (event) {
         const data = JSON.parse(event.data);
@@ -391,13 +393,10 @@
                         deleteFile(file, link, deleteIcon);
                     };
                     fileContainer.appendChild(deleteIcon);
-
                     output.appendChild(fileContainer);
                 });
-
                 var br = document.createElement('br');
                 output.appendChild(br);
-
                 output.scrollTop = output.scrollHeight;
             });
     }
@@ -468,7 +467,6 @@
         }
     });
 
-
     //listen to signalling messages
     socket.addEventListener('message', function (event) {
         const data = JSON.parse(event.data);
@@ -507,14 +505,12 @@
             displaySources(sources);
         }
     });
-
     function displaySources(sources) {
         const sourcesContainer = document.getElementById('sources-container');
         var br = document.createElement('br');
         output.appendChild(br);
         output.appendChild(sourcesContainer);
         sourcesContainer.innerHTML = ''; 
-
         sources.forEach(source => {
             const sourceElement = document.createElement('div');
             sourceElement.classList.add('source-item');
@@ -522,7 +518,6 @@
             sourcesContainer.appendChild(sourceElement);
         });
     }
-
 
     // listen for the end of messages
     socket.addEventListener('message', function (event) {
@@ -533,7 +528,6 @@
 
             const gifContainer = document.getElementById('process-gif-container');
             gifContainer.innerHTML = ''; //clean 
-            input.value = ''; //clean
             if (cursorSpan) {
                 cursorSpan.remove();
                 cursorSpan = null; // clean
@@ -552,7 +546,32 @@
             output.scrollTop = output.scrollHeight;
 
             responseInProgress = false;
-            console.log("answer was fully emitted end of message")
+            console.log("answer was fully emitted end of message");
+            const copyButton = document.querySelector('.copyButton');
+            if (copyButton) {
+                copyButton.style.visibility = 'visible';
+                output.appendChild(copyButton);
+            }
+            if (copyButton) {
+                copyButton.addEventListener('click', async function() {
+                    socket.send(JSON.stringify({ type: 'request_last_assistant_message' }));
+                });
+            }
+        }
+    });
+
+    // copy button logic listener
+    socket.addEventListener('message', function (event) {
+        const data = JSON.parse(event.data);
+
+        if (data.type === 'last_assistant_message') {
+            const textToCopy = data.data.content;
+            navigator.clipboard.writeText(textToCopy).then(function() {
+                console.log('Last assistant message text copied to clipboard');
+            })
+            .catch(function(error) {
+                console.error('Could not copy text: ', error);
+            });
         }
     });
 
@@ -669,15 +688,16 @@
             if (!stopTypewriter) {
                 outputField.innerHTML = '';
                 const messages = [
-                'your documents compressed to a Q&A box',
-                'they say i am IQ 140+',
+                'hiii, ✌️ i am now even more intelligent .. try me',
                 'tell me your idea and ask me to brainstorm on it..',
+                'they say i am IQ 140+',
+                'i can do tables, you know..',
+                'your documents compressed to a Q&A box',
                 'i can create presentation, try me..',
                 'please remember if you leave the page open too long your browser forgets your id, your docs will be deleted and ill forget our conversation',
                 'i have many ideas about how AI can be used for your clients, ask me..',
                 'i am good at images too..',
                 'google? aww that is so 2022, ask me instead',
-                'i can do tables, you know..',
                 'i am ofc fluent in code too..',
                 ];
                 const index = messages.indexOf(text);
