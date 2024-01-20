@@ -83,8 +83,8 @@ class Conversation:
 
     def add_message(self, role, content):
         approx_token_length = len(content) // 5
-        if approx_token_length > 400:
-            content = content[: 400 * 5]
+        if approx_token_length > 1000:
+            content = content[: 1000 * 5]
 
         message = {"role": role, "content": content}
         if len(self.conversation_history) >= self.max_length:
