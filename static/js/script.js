@@ -415,7 +415,6 @@
                     deleteIconElement.style.display = 'none';
                     linkElement.onmouseover = null;
                     linkElement.onmouseout = null;
-                    fetchFilesForUser();
                 } else {
                     console.error('Failed to delete file:', fileName);
                 }
