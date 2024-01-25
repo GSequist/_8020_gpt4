@@ -1,6 +1,7 @@
 ## one version for 8020
 
 import pptx
+import datetime
 from openai import OpenAI
 import base64
 import requests
@@ -111,6 +112,9 @@ def generate_prs(user_id, user_query, num_slides, context=None):
     image_folder = "deck_generator/fallback_images"
     prs = pptx.Presentation("deck_generator/master.pptx")
     responses = create_prs(user_query, num_slides, context)
+    presentation_title = (
+        responses[0].get("title", "untitled") if responses else "untitled"
+    )
     try:
         image_b64 = dalle_3(user_query)
         image_stream = BytesIO(image_b64)
@@ -152,7 +156,12 @@ def generate_prs(user_id, user_query, num_slides, context=None):
     user_folder = os.path.join(WORK_FOLDER, str(user_id))
     if not os.path.exists(user_folder):
         os.makedirs(user_folder)
-    presentation_path = os.path.join(user_folder, "your_powerpoint.pptx")
+
+    current_date = datetime.datetime.now().strftime("%Y%m%d")
+    presentation_file_name = (
+        f"{current_date}_{presentation_title.replace(' ', '_')}.pptx"
+    )
+    presentation_path = os.path.join(user_folder, presentation_file_name)
     prs.save(presentation_path)
 
     return presentation_path

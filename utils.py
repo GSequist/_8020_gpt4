@@ -63,10 +63,6 @@ def extract_sources_and_pages(results):
     except Exception as e:
         print(f"\n[extract_sources_and_pages]: error: {e}")
         return None
-
-    print(
-        f"\n[extract_sources_and_pages]: Sources and pages extracted: {sources_and_pages}"
-    )
     return sources_and_pages
 
 
@@ -133,7 +129,7 @@ class Conversation:
                     message["content"],
                 )
                 if match:
-                    result_words = match.group(2).split()[:100]
+                    result_words = match.group(2).split()[:2000]
                     short_result = " ".join(result_words)
                     abbreviation_note = (
                         "\n[Large result from vectorstore abbreviated for brevity]"

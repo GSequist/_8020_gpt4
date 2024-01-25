@@ -44,7 +44,8 @@
     });
 
     socket.addEventListener('close', function (event) {
-        console.log('Disconnected from the server.');
+        console.log('Disconnected from the server. Refreshing page...');
+        window.location.reload(); // enforce refresh
     });      
 
     ////////////////////////////////////////////////////modular formatting
@@ -507,10 +508,8 @@
     });
     function displaySources(sources) {
         const sourcesContainer = document.getElementById('sources-container');
-        var br = document.createElement('br');
-        output.appendChild(br);
         output.appendChild(sourcesContainer);
-        sourcesContainer.innerHTML = ''; 
+        sourcesContainer.innerHTML = '';
         sources.forEach(source => {
             const sourceElement = document.createElement('div');
             sourceElement.classList.add('source-item');

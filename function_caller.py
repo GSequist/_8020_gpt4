@@ -36,12 +36,13 @@ client = AsyncOpenAI()
 ################################################################################################################################
 
 
-async def chat_completion_request(messages, user_id, functions=None):
+async def chat_completion_request(messages, user_id, max_tokens=3000, functions=None):
     MAX_RETRIES = 10
     BASE_SLEEP_TIME = 2
+    print(f"\n[chat_completion_request]: max tokens enforced: {max_tokens}")
     for attempt in range(MAX_RETRIES):
         try:
-            max_tokens = 3000
+            max_tokens = max_tokens
             total_tokens = 0
             last_removed_message = None
 
@@ -51,10 +52,10 @@ async def chat_completion_request(messages, user_id, functions=None):
                 total_tokens += msg_tokens
 
             print(
-                f"[chat_completion_request]: messages entering the token cutter loop: {messages}"
+                f"\n[chat_completion_request]: messages entering the token cutter loop: {messages}"
             )
             print(
-                f"[chat_completion_request]: Total tokens before token cutter loop: {total_tokens}"
+                f"\n[chat_completion_request]: Total tokens before token cutter loop: {total_tokens}"
             )
 
             while total_tokens > max_tokens and messages:
@@ -73,7 +74,7 @@ async def chat_completion_request(messages, user_id, functions=None):
                 total_tokens += len(truncated_tokens)
 
             print(
-                f"[chat_completion_request]: Total tokens after token cutter loop: {total_tokens}"
+                f"\n[chat_completion_request]: Total tokens after token cutter loop: {total_tokens}"
             )
 
             # a flag to check if user has uploaded files
@@ -100,7 +101,7 @@ async def chat_completion_request(messages, user_id, functions=None):
                 Please focus very deeply before answering my questions.
                 You are a highly intelligent AI assistant developed by 8020ai+ with access to tools.
                 Your task is to help 8020 employees with their questions and perform tasks they ask of you. 
-                Remember you are very very intelligent. Answer succintly very to the point.
+                Remember you are very very intelligent.
                 You don't always have to use a tool to answer a question.
                 If you are about to answer in a table format, start with an '^' like this '^ | column 1 | column 2' and start each new row with '^'. End the table with '±' before continuing with any additional text. Don't use any special characters for text inside the table.
                 Don't ever use symbols '^' or '±' other than when creating a table.
@@ -119,7 +120,7 @@ async def chat_completion_request(messages, user_id, functions=None):
             )
 
             response = await client.chat.completions.create(
-                model="gpt-4",
+                model="gpt-4-1106-preview",
                 messages=messages,
                 functions=functions,
                 function_call="auto",
@@ -161,8 +162,8 @@ async def chat_completion_request(messages, user_id, functions=None):
                 )
                 break
 
-        except openai.error.InvalidRequestError as e:
-            print(f"OpenAI InvalidRequestError: {e}")
+        except openai.InvalidRequestError as e:
+            print(f"\nOpenAI InvalidRequestError: {e}")
             break
 
         except openai.RateLimitError as e:
@@ -194,7 +195,7 @@ _8020_functions = [
         "description": """Use this function to retrieve relevant sections of documents uploaded by user.
         Ask the user to clarify their question before running the function. What area/type of information they are looking for  in the docs?
         Don't use the function without the values. ALWAYS, ask the user for the values if they are missing.
-        Don't make assumptions about what values to plug into functions. Ask for clarification if a user request is ambiguous.
+        Remember to always ask for the parameter tokens never make assumptions about the size of the document.
         """,
         "parameters": {
             "type": "object",
@@ -204,8 +205,14 @@ _8020_functions = [
                     "description": """What is user's question about the document? 
                     """,
                 },
+                "tokens": {
+                    "type": "string",
+                    "enum": ["3000", "10000", "100000"],
+                    "description": """Always ask the user how large is the document uploaded and 
+                    how much she wants the AI to see. Small review is 3000 tokens, medium review is 10000 tokens, large review is 100000 tokens.""",
+                },
             },
-            "required": ["query"],
+            "required": ["query", "tokens"],
         },
     },
     {
@@ -377,8 +384,19 @@ async def call_8020_function(messages, func_call, user_id=None, websocket=None):
 
             query = parsed_output.get("query", "")
             print(f"\n[vectorstore]:query: {query}")
+            max_tokens = int(parsed_output.get("tokens", "3000"))
+            print(f"\n[vectorstore]:tokens: {max_tokens}")
 
-            descriptions = await to_thread(doc_vectorstore, query, user_id)
+            if max_tokens == 3000:
+                k = 10
+            elif max_tokens == 10000:
+                k = 40
+            elif max_tokens == 100000:
+                k = 120
+            else:
+                k = max_tokens / 100
+
+            descriptions = await to_thread(doc_vectorstore, query, k, user_id)
 
             sources = await to_thread(extract_sources_and_pages, descriptions)
             print(f"[vectorstore]: sources extracted: {sources}")
@@ -389,16 +407,16 @@ async def call_8020_function(messages, func_call, user_id=None, websocket=None):
 
             # store the combined sources and pages in the dictionary
             sources_sessions[user_id]["combined"] = sources
-            print(f"[doc_vectorstore]: sources_sessions updated: {sources_sessions}")
+            print(f"[vectorstore]: sources_sessions updated: {sources_sessions}")
 
-            max_tokens = 2000
+            max_tokens = max_tokens
             current_token_count = 0
-            cleaned_descriptions = ""
             cleaned_descriptions = ""
             for document, score in descriptions:
                 page_content = document.page_content
                 tokens = tokenizer.encode(page_content)
                 remaining_tokens = max_tokens - current_token_count
+                print(f"[vectorstore]: remaining_tokens: {remaining_tokens}")
 
                 if len(tokens) > remaining_tokens:
                     tokens = tokens[:remaining_tokens]
@@ -408,7 +426,9 @@ async def call_8020_function(messages, func_call, user_id=None, websocket=None):
 
                 if current_token_count >= max_tokens:
                     break
-            print(f"\n[vectorstore]: Total tokens after cutting: {current_token_count}")
+            print(
+                f"\n[vectorstore]: Total tokens after cutting: {len(tokenizer.encode(cleaned_descriptions))}"
+            )
 
         except Exception as e:
             import traceback
@@ -430,7 +450,7 @@ async def call_8020_function(messages, func_call, user_id=None, websocket=None):
         try:
             print("\n[vectorstore]: got search results, summarizing content")
             response = await chat_completion_request(
-                messages, user_id, functions=_8020_functions
+                messages, user_id, max_tokens=max_tokens, functions=_8020_functions
             )
             return response
         except Exception as e:

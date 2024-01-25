@@ -17,7 +17,7 @@ client = AsyncOpenAI()
 # doc_vectorstore
 
 
-def doc_vectorstore(query: str, user_id: str, which_doc_filepath: str = None) -> str:
+def doc_vectorstore(query: str, k, user_id: str) -> str:
     """vectorstore the uploaded docs"""
     try:
         user_faiss_filename = f"faiss_db_{user_id}"
@@ -29,7 +29,7 @@ def doc_vectorstore(query: str, user_id: str, which_doc_filepath: str = None) ->
         if user_specific_db:
             retrieval = user_specific_db.similarity_search_with_score(
                 query,
-                k=20,
+                k=k,
             )
             # sort by score
             sorted_retrieval = sorted(retrieval, key=lambda x: x[1], reverse=True)
