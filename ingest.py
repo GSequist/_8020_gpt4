@@ -4,7 +4,7 @@ import glob
 from typing import List
 from dotenv import load_dotenv
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.embeddings.openai import OpenAIEmbeddings
+from langchain_openai import OpenAIEmbeddings
 from langchain.docstore.document import Document
 from langchain_community.vectorstores import FAISS
 from langchain_community.document_loaders import (
@@ -122,7 +122,7 @@ def process_documents(user_id: str, user_folder: str) -> None:
                 )
                 texts.append(new_doc)
 
-        embeddings = OpenAIEmbeddings()
+        embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
         GLOBAL_FAISS_DBs[user_id] = FAISS.from_documents(texts, embeddings)
         print(f"[process_documents]: FAISS database updated for user {user_id}")
         user_faiss_filename = f"faiss_db_{user_id}"

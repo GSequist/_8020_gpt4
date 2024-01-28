@@ -108,8 +108,14 @@ async def chat_completion_request(messages, user_id, max_tokens=3000, functions=
                 If a function does not return anything or fails, let the user know!
                 Before using a function, always ask the user for the values if they are missing.
                 If a function returns answer which is unsatisfactory given user's question, explain it to user and run the function again adjusting the parameters. This is especially true for functions that return web results.
-                Before answering, take a moment to think deeply about how best to answer user query. Think always step by step.
+                Think always step by step.
                 Think more steps. 
+                Before answering, take a moment to think deeply about how best to answer user query and note your thoughts in the following format:
+                |||logic|||
+                - Thought process here
+                - Steps to answer
+                |||answer|||
+                Then provide your answer below the scratchpad notes.
                 """,
             }
 
@@ -120,7 +126,7 @@ async def chat_completion_request(messages, user_id, max_tokens=3000, functions=
             )
 
             response = await client.chat.completions.create(
-                model="gpt-4-1106-preview",
+                model="gpt-4-0125-preview",
                 messages=messages,
                 functions=functions,
                 function_call="auto",

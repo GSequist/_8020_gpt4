@@ -241,7 +241,7 @@
         }
 
         // If the length of the sequence gets too long without a match, reset it
-        if (backtickSequence.length > 100) { // 100 is an arbitrary limit for reset
+        if (backtickSequence.length > 10) { // 100 is an arbitrary limit for reset
             backtickSequence = '';
         }
 
@@ -381,7 +381,8 @@
                     fileContainer.classList.add('file-container');
 
                     var link = document.createElement('a');
-                    link.href = `/download/${getUserId()}?file=${file}`;
+                    // link.href = `/download/${getUserId()}?file=${file}`;
+                    link.href = `/download/${getUserId()}?file=${encodeURI(file)}`;
                     link.textContent = file;
                     link.target = '_blank';
                     link.classList.add('download-btn');

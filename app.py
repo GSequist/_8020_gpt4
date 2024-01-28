@@ -11,6 +11,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 import shutil
+import urllib.parse
 import uvicorn
 import json
 import asyncio
@@ -158,6 +159,7 @@ async def delete_file(user_id: str, file_name: str):
 
 @app.get("/download/{user_id}")
 async def download_file(user_id: str, file: str):
+    decoded_file = urllib.parse.unquote(file)
     file_path = os.path.join(WORK_FOLDER, user_id, file)
     if os.path.exists(file_path):
         return FileResponse(

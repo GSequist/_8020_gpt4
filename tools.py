@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from openai import AsyncOpenAI
 from langchain_community.tools import DuckDuckGoSearchRun
 from langchain_community.vectorstores import FAISS
-from langchain.embeddings.openai import OpenAIEmbeddings
+from langchain_openai import OpenAIEmbeddings
 from langchain_community.document_loaders import CSVLoader
 
 load_dotenv()
@@ -22,7 +22,7 @@ def doc_vectorstore(query: str, k, user_id: str) -> str:
     try:
         user_faiss_filename = f"faiss_db_{user_id}"
 
-        embeddings = OpenAIEmbeddings()
+        embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
         user_specific_db = FAISS.load_local(user_faiss_filename, embeddings)
         print(f"[doc_vectorstore]: FAISS index loaded for user {user_id}")
 

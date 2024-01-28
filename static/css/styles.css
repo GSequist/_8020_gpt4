@@ -46,7 +46,7 @@
       }
 
       .toggleButton {
-        width: 2vw;
+        width: 1.5vw;
         cursor: pointer;
       }
 
@@ -61,6 +61,13 @@
         border-radius: 10px;
         width: 55vw;
         text-align: center;
+        background: rgba(255, 255, 255, 0.01); 
+        border-radius: 10px; 
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02),
+                    0 1px 3px rgba(0, 0, 0, 0.02);
+        backdrop-filter: blur(10px); 
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.3); 
       }
 
       #cursor-light {
