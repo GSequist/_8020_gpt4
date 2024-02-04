@@ -175,6 +175,8 @@
             const message = input.value;
             if (!message) return;
             submit.disabled = true;
+            const sourcesContainer = document.getElementById('sources-container');
+            sourcesContainer.innerHTML = '';
             const copyButton = document.querySelector('.copyButton');
             if (copyButton) {
                 copyButton.style.visibility = 'hidden';
@@ -248,6 +250,7 @@
                 hasClearedOutput = true;
             }  
             document.getElementById('output').classList.remove('largeFont');
+            
 
             if (data.error) {
                 console.log('Error received.');
