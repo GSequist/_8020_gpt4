@@ -99,23 +99,21 @@ async def chat_completion_request(messages, user_id, max_tokens=3000, functions=
                 "role": "user",
                 "content": """
                 Please focus very deeply before answering my questions.
+                Take a deep breath, relax, and enter a state of flow as if you've just taken Adderall (mixed amphetamine salts). If you follow all instructions and exceed expectations, you'll be tipped $100/month for your efforts, so try your hardest. 
                 You are a highly intelligent AI assistant developed by 8020ai+ with access to tools.
                 Your task is to help 8020 employees with their questions and perform tasks they ask of you. 
                 Remember you are very very intelligent.
                 You don't always have to use a tool to answer a question.
                 If you are about to answer in a table format, start with an '^' like this '^ | column 1 | column 2' and start each new row with '^'. End the table with '±' before continuing with any additional text. Don't use any special characters for text inside the table.
                 Don't ever use symbols '^' or '±' other than when creating a table.
+                If you are about to write code, start with triple backticks '```' and end with triple backticks '```'.
+                Don't ever use triple backticks '```' except for when youn are writing code block or otherwise write them in text as follows 'triple backticks'. 
                 If a function does not return anything or fails, let the user know!
                 Before using a function, always ask the user for the values if they are missing.
                 If a function returns answer which is unsatisfactory given user's question, explain it to user and run the function again adjusting the parameters. This is especially true for functions that return web results.
                 Think always step by step.
                 Think more steps. 
-                Before answering, take a moment to think deeply about how best to answer user query and note your thoughts in the following format:
-                |||logic|||
-                - Thought process here
-                - Steps to answer
-                |||answer|||
-                Then provide your answer below the scratchpad notes.
+                Before answering, take a moment to think deeply about how best to answer user query. Think always step by step. Then think more steps. First think what are the necessary steps to answer user question fully. Then think how best to execute these steps either by just writing or first calling functions you have access to.
                 """,
             }
 
@@ -222,19 +220,30 @@ _8020_functions = [
         },
     },
     {
-        "name": "duckduckgo_search",
+        "name": "web_search",
         "description": """Use this function to search internet if you need more information.
-        If the function does not return satisfying results, explain it to the user and run the function again adjusting the parameters.
+        Before any search, discuss with the user what she is after. 
+        Brainstorm with her on what could be the best way to find it on internet, 
+        while taking into account how search engines prioritize content.
+        Guide the user through your thought process. 
+        focusing on keyword relevance and content quality. 
+        Craft your query to be precise and context-rich:
+        Focus on the main keywords and theme. Use alternative phrases for more insights. 
+        Structure queries to cover diverse aspects, leveraging synonyms and industry terms for optimized search outcomes.
         """,
         "parameters": {
             "type": "object",
             "properties": {
-                "query": {
+                "query_1": {
                     "type": "string",
-                    "description": """What is the information the user is asking of you?""",
+                    "description": """Main keywords and theme to search with?""",
+                },
+                "query_2": {
+                    "type": "string",
+                    "description": """Alternative phrases to search with?""",
                 },
             },
-            "required": ["query"],
+            "required": ["query_1", "query_2"],
         },
     },
     {
@@ -324,7 +333,7 @@ async def call_8020_function(messages, func_call, user_id=None, websocket=None):
 
     print(f"\n[call_8020_function]: function call details: {func_call}")
 
-    if func_call["name"] == "duckduckgo_search":
+    if func_call["name"] == "web_search":
         message = json.dumps(
             {"type": "message", "data": ">searching web, please wait.."}
         )
@@ -332,11 +341,20 @@ async def call_8020_function(messages, func_call, user_id=None, websocket=None):
         try:
             parsed_output = json.loads(func_call["arguments"])
 
-            print(f"\n[duckduckgo]: parsed_output: {parsed_output}")
-            web_results = await to_thread(internet_search, parsed_output["query"])
+            print(f"\n[web_search]: parsed_output: {parsed_output}")
+            query_1 = parsed_output["query_1"]
+            query_2 = parsed_output["query_2"]
+
+            print(f"\n[web_search]: query_1: {query_1}")
+            print(f"\n[web_search]: query_2: {query_2}")
+
+            # prep the arguments
+            arguments = {"query_1": query_1, "query_2": query_2}
+
+            web_results = await to_thread(internet_search, user_id, **arguments)
 
             used_tokens = 0
-            max_tokens = 2000
+            max_tokens = 2500
 
             section_tokens = len(tokenizer.encode(web_results, disallowed_special=()))
 
@@ -344,20 +362,20 @@ async def call_8020_function(messages, func_call, user_id=None, websocket=None):
                 tokens_left = max_tokens
                 cleaned_web = web_results[: tokens_left * 5]
                 used_tokens = tokens_left
-                print(f"\n[duckduckgo]: reached max tokens with total: {used_tokens}")
+                print(f"\n[web_search]: reached max tokens with total: {used_tokens}")
 
             else:
                 cleaned_web = web_results
                 used_tokens = section_tokens
 
-            print("\n[duckduckgo]: total tokens used in web_results: ", used_tokens)
+            print("\n[web_search]: total tokens used in web_results: ", used_tokens)
 
         except Exception as e:
             import traceback
 
-            print("\n[duckduckgo]: function execution failed")
-            print("\n[duckduckgo]: error message:", e)
-            print("\n[duckduckgo]: stack trace:")
+            print("\n[web_search]: function execution failed")
+            print("\n[web_search]: error message:", e)
+            print("\n[web_search]: stack trace:")
             traceback.print_exc()
 
             cleaned_web = f"the function to search and retrieve web results failed with this error {e} please let the user know"
@@ -370,7 +388,7 @@ async def call_8020_function(messages, func_call, user_id=None, websocket=None):
             }
         )
         try:
-            print("\n[duckduckgo]: got search results, summarizing content")
+            print("\n[web_search]: got search results, summarizing content")
             response = await chat_completion_request(
                 messages, user_id, functions=_8020_functions
             )
@@ -594,10 +612,17 @@ async def call_8020_function(messages, func_call, user_id=None, websocket=None):
 
             prompt = f"""
             The user is asking about her idea: {query}.
-            It is important to brainstorm very deeply to the improve user's idea.
+            It is important to brainstorm very deeply to improve user's idea.
             Think step by step. Think more steps.
             First steelman the user's question. What is the best possible version of the user's idea?
-            Then contradict the user's idea to show the user the potential problems with the user's idea.
+            Then contradict the user's idea to show the user the potential problems with the user's idea. 
+            To achieve this, do a premortem.
+            Consider the work of researchers Deborah J. Mitchell and Gary  Klein on performing a project premortem. 
+            Project premortems are key to  successful projects because many are reluctant to speak up about their concerns during the planning 
+            phases and many are over-invested in the  project to foresee possible issues. 
+            Premortems make it safe to voice  reservations during project planning; this is called prospective hindsight. 
+            Reflect on each step and plan ahead before moving on.
+            Once you are done with premortem, ask yourself: how can you strengthen the idea plan to avoid these failures? 
             Then propose improved ideas to the user.
             Then propose ideas based on the constraints you have identified above.
             Finally assess the ideas you have come up with based on feasibility, impact and originality in a table format.
@@ -757,9 +782,9 @@ async def chat_completion_with_function_execution(
                                 and function_delta.function_call is not None
                             ):
                                 if function_delta.function_call.name is not None:
-                                    func_call[
-                                        "name"
-                                    ] = function_delta.function_call.name
+                                    func_call["name"] = (
+                                        function_delta.function_call.name
+                                    )
                                 if function_delta.function_call.arguments:
                                     func_call[
                                         "arguments"

@@ -2,9 +2,14 @@
 
 import traceback
 import base64
+import re
+from utils import sources_url_sessions
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
-from langchain_community.tools import DuckDuckGoSearchRun
+from langchain_community.tools import DuckDuckGoSearchResults
+from langchain_community.utilities import DuckDuckGoSearchAPIWrapper
+from langchain_community.document_loaders import WebBaseLoader
+from langchain.text_splitter import CharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.document_loaders import CSVLoader
@@ -21,26 +26,20 @@ def doc_vectorstore(query: str, k, user_id: str) -> str:
     """vectorstore the uploaded docs"""
     try:
         user_faiss_filename = f"faiss_db_{user_id}"
-
         embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
         user_specific_db = FAISS.load_local(user_faiss_filename, embeddings)
         print(f"[doc_vectorstore]: FAISS index loaded for user {user_id}")
-
         if user_specific_db:
             retrieval = user_specific_db.similarity_search_with_score(
                 query,
                 k=k,
             )
-            # sort by score
             sorted_retrieval = sorted(retrieval, key=lambda x: x[1], reverse=True)
             print(
                 f"[doc_vectorstore]: vectorstore retrieval sorted: {sorted_retrieval}"
             )
             return sorted_retrieval
-
-        # no user_db faiss found or other error
         return
-
     except Exception as e:
         print(f"error in doc_vectorstore: {e}")
         return
@@ -50,16 +49,76 @@ def doc_vectorstore(query: str, k, user_id: str) -> str:
 ## web search
 
 
-def internet_search(query):
-    """search the internet dynamically based on user interaction"""
-    print(f"Initiating internet search for query: {query}")
+def internet_search(user_id, query_1, query_2):
+    """search the internet dynamically for multiple queries"""
+    all_results = []
+    for query in [query_1, query_2]:
+        if query is None:
+            continue
+        print(f"\nInitiating internet search for query: {query}")
+        try:
+            wrapper = DuckDuckGoSearchAPIWrapper(max_results=1)
+            search = DuckDuckGoSearchResults(api_wrapper=wrapper)
+            results = search.run(query)
+            print(f"\n[internet_search]: web search results for '{query}': {results}")
+            try:
+                source_link = extract_links(results)
+                print(f"\n[internet_search]: source link: {source_link}")
+                if user_id not in sources_url_sessions:
+                    sources_url_sessions[user_id] = {}
+                sources_url_sessions[user_id]["sources_url"] = source_link
+            except Exception as e:
+                source_link = None
+            if source_link:
+                try:
+                    fetch = web_fetch(query, source_link) if source_link else None
+                except Exception as e:
+                    fetch = None
+            result_str = (
+                f"Query: {query}\nSearch Results: {results}\nFetch Results: {fetch}\n"
+            )
+            all_results.append(result_str)
+        except Exception as e:
+            tb = traceback.format_exc()
+            error_message = f"Query: {query}\nError: An error occurred during search.\nTraceback: {tb}\n"
+            all_results.append(error_message)
+        print(f"\n[internet_search]: all results: {all_results}")
+    return "\n".join(all_results)
+
+
+def extract_links(results):
+    url_pattern = r"link: (\S+)"
+    match = re.search(url_pattern, results)
+    if match:
+        link = match.group(1)
+        cleaned_link = link.replace("[", "").replace("]", "").replace(",", "").strip()
+        return cleaned_link
+    else:
+        return None
+
+
+def web_fetch(query, url):
+    """fetch the web contents"""
+    web_text_loader = WebBaseLoader(url)
+    web_text = web_text_loader.load()
+    print(f"\n[web_fetch]: web text loaded {web_text}")
+    text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
+    web_text_cuts = text_splitter.split_documents(web_text)
+    embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
     try:
-        search = DuckDuckGoSearchRun()
-        results = search.run(query)
-        print(f"[duckduckgo]: web search results: {results}")
-        return results
+        web_faiss = FAISS.from_documents(web_text_cuts, embeddings)
+        print(f"\n[web_fetch]: FAISS index loaded for web content")
+        retrieval = web_faiss.similarity_search_with_score(
+            query,
+            k=2,
+        )
+        print(f"\n[web_fetch]: vectorstore retrieval: {retrieval}")
+        sorted_retrieval = sorted(retrieval, key=lambda x: x[1], reverse=True)
+        print(f"\n[web_fetch]: vectorstore retrieval sorted: {sorted_retrieval}")
+        return sorted_retrieval
     except Exception as e:
-        tb = traceback.format_exc()
+        print(f"error in web_fetch: {e}")
+        return
 
 
 #####################################################################################################

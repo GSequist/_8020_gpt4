@@ -60,7 +60,6 @@
     const fileInput = document.getElementById('file');
     const typingButton = document.getElementById('typing');
     const uploadButton = document.getElementById('upload');
-    const messages = document.getElementById('messages');
     const gifContainer = document.getElementById('process-gif-container');
     const toggleButton = document.querySelector('.toggleButton');
     const body = document.querySelector('body');
@@ -166,36 +165,32 @@
     /////////////////////////////////////////////////////////////functional code
     //sending messages
     function sendMessage(event) {
-    if (event) event.preventDefault();  
-        if (responseInProgress) {
-            messages.innerHTML = '>response in progress .. please wait..';
-            return;
-        }
-        if (uploadInProgress) {
-            messages.innerHTML = ">upload in progress .. please wait...";
-            return;
-        }
-        const message = input.value;
-        submit.disabled = true;
-        const copyButton = document.querySelector('.copyButton');
+        if (event) event.preventDefault();  
+            if (responseInProgress) {
+                return;
+            }
+            if (uploadInProgress) {
+                return;
+            }
+            const message = input.value;
+            if (!message) return;
+            submit.disabled = true;
+            const copyButton = document.querySelector('.copyButton');
             if (copyButton) {
                 copyButton.style.visibility = 'hidden';
             }
-        input.value = '';
-        if (!message) return;
+            input.value = '';
+            
             const messageData = JSON.stringify({ message: message, user_id: getUserId() });
             console.log('sendMessage called:', messageData);
             socket.send(messageData); 
             console.log("WebSocket state after sending:", socket.readyState);
             }
 
-            submit.addEventListener('click', sendMessage);
-            form.addEventListener('submit', sendMessage);
-
-            input.addEventListener('keydown', function (event) {
-        if (event.key === 'Enter') {
-            sendMessage(event);  
-        }
+    submit.addEventListener('click', sendMessage);
+    form.addEventListener('submit', function(event) {
+        event.preventDefault();
+        sendMessage(event);
     });
     
     ////////////////////////////////////////////////listening to backend
@@ -228,23 +223,15 @@
     let isProcessingCode = false;
 
     function isCodeFormat(data) {
-        // Append new data to the backtickSequence
         backtickSequence += data;
-
-        // Regular expression to match a sequence of three backticks possibly separated by line breaks
         const tripleBacktickRegex = /(`\n*\n*`)\n*\n*`/;
-
-        // Check if the accumulated sequence matches the pattern
         if (tripleBacktickRegex.test(backtickSequence)) {
-            backtickSequence = ''; // Reset the sequence for future checks
+            backtickSequence = ''; 
             return true;
         }
-
-        // If the length of the sequence gets too long without a match, reset it
-        if (backtickSequence.length > 10) { // 100 is an arbitrary limit for reset
+        if (backtickSequence.length > 100) { 
             backtickSequence = '';
         }
-
         return false;
     }
 
@@ -423,7 +410,7 @@
             .catch(error => console.error('Error:', error));
     }
 
-    // listen for 'new_user_message' event
+    // listen for new user message
     socket.addEventListener('message', function (event) {
         const data = JSON.parse(event.data);
 
@@ -432,9 +419,10 @@
             if (!hasClearedOutput) {
                 output.innerHTML = ''; 
                 hasClearedOutput = true;
-                }  
+            }  
             document.getElementById('output').classList.remove('largeFont');
-            output.innerHTML += `<span class="userMessage">${data.data}</span><br><br>`;
+            const formattedMessage = data.data.replace(/\n/g, '<br>');
+            output.innerHTML += `<span class="userMessage">${formattedMessage}</span><br><br>`;
         }
         output.scrollTop = output.scrollHeight;
     });
@@ -518,6 +506,29 @@
         });
     }
 
+    //listen for sources url
+    socket.addEventListener('message', function(event) {
+        const data = JSON.parse(event.data);
+        if (data.type === 'sources_url') {
+            const sourceUrl = data.sources_url;
+            displaySource(sourceUrl);
+        }
+    });
+    function displaySource(sourceUrl) {
+        const sourcesContainer = document.getElementById('sources-container');
+        if (sourceUrl) {
+            const sourceElement = document.createElement('div');
+            sourceElement.classList.add('source-item');
+            const link = document.createElement('a');
+            link.setAttribute('href', sourceUrl);
+            link.setAttribute('target', '_blank'); 
+            link.textContent = sourceUrl;
+            sourceElement.appendChild(link);
+            sourcesContainer.appendChild(sourceElement);
+        }
+    }
+
+    
     // listen for the end of messages
     socket.addEventListener('message', function (event) {
         const data = JSON.parse(event.data);
@@ -531,7 +542,10 @@
                 cursorSpan.remove();
                 cursorSpan = null; // clean
             }
-
+            const fileDisplayContainer = document.getElementById('file-display-container'); // Assuming this is your container
+            if (fileDisplayContainer) {
+                fileDisplayContainer.innerHTML = ''; // clear old files
+            }
             fetchFilesForUser();
 
             var br = document.createElement('br');

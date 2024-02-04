@@ -29,6 +29,7 @@ tokenizer = tiktoken.get_encoding("cl100k_base")
 ##sessions
 
 url_sessions = {}
+sources_url_sessions = {}
 sources_sessions = {}
 user_sessions = {}
 conversations = {}

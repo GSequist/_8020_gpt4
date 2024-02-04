@@ -20,6 +20,7 @@ from ingest import process_documents
 from utils import (
     Conversation,
     url_sessions,
+    sources_url_sessions,
     sources_sessions,
     user_sessions,
     conversations,
@@ -252,11 +253,9 @@ async def handle_message(user_id, data, websocket):
             }
             message = json.dumps({"type": "response", "data": "", "payload": payload})
             await websocket.send_text(message)
-
             print(
                 f"[handle_message]: URL emitted (first 100 chars): {payload['img_url'][:100]}"
             )
-
             url_sessions[user_id]["img_url"] = ""
 
         if user_id in sources_sessions:
@@ -267,6 +266,17 @@ async def handle_message(user_id, data, websocket):
 
             # clear sources
             sources_sessions[user_id] = {"combined": []}
+
+        if user_id in sources_url_sessions:
+            sources_url = sources_url_sessions[user_id].get("sources_url", "")
+            message = json.dumps(
+                {"type": "sources_url", "data": "", "sources_url": sources_url}
+            )
+            await websocket.send_text(message)
+            print(f"\n[handle_message]: sources url emitted: {sources_url}")
+
+            # clear sources
+            sources_url_sessions[user_id] = {"sources_url": []}
 
         conversations[user_id].add_message("assistant", compl_response)
 
