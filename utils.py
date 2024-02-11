@@ -74,15 +74,15 @@ def extract_sources_and_pages(results):
 class Conversation:
     def __init__(
         self, max_length=50
-    ):  # if an average message is around 100 characters long (which might be a reasonable estimate for a chat-based interface, though the real number could be higher or lower depending on your specific use case), 50 messages would mean around 5,000 characters of text, or about 5KB of memory.
+    ):  # if an average message is around 100 characters long
+        # (which might be a reasonable estimate for a chat-based interface,
+        # though the real number could be higher or lower depending on
+        # specific use case), 50 messages would mean around 5,000 characters of text,
+        # or about 5KB of memory.
         self.conversation_history = []
         self.max_length = max_length
 
     def add_message(self, role, content):
-        approx_token_length = len(content) // 5
-        if approx_token_length > 1000:
-            content = content[: 1000 * 5]
-
         message = {"role": role, "content": content}
         if len(self.conversation_history) >= self.max_length:
             self.conversation_history.pop(0)
@@ -117,27 +117,14 @@ class Conversation:
         return filtered_history
 
     def abbreviate_function_messages(self):
-        """Abbreviates function messages in the conversation history"""
+        """Abbreviates function messages in the conversation history containing image data."""
+        image_data_pattern = re.compile(r"data:image/.*?;base64,")
 
         for message in self.conversation_history:
             if message["role"] == "function":
-                is_binary_data = "data:image/jpeg;base64," in message["content"]
-                if is_binary_data:
+                if image_data_pattern.search(message["content"]):
                     abbreviation_note = "\n[Image data abbreviated for brevity]"
                     message["content"] = "[Binary Data: Image]" + abbreviation_note
-                match = re.search(
-                    r"(Function .+? Results:)([\s\S]*?)(?=(assistant:|user:|system:|function:|$))",
-                    message["content"],
-                )
-                if match:
-                    result_words = match.group(2).split()[:2000]
-                    short_result = " ".join(result_words)
-                    abbreviation_note = (
-                        "\n[Large result from vectorstore abbreviated for brevity]"
-                    )
-                    message["content"] = (
-                        match.group(1) + short_result + abbreviation_note
-                    )
 
 
 ############################################################################################################

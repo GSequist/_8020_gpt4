@@ -298,26 +298,21 @@
                 });
                 } else {
                 if (isCodeFormat(data.data)) {
-                    // Toggle code processing state if backticks are found
                     if (!isProcessingCode) {
                         isProcessingCode = true;
                         codeBlockElement = createAndAppendCodeBlock(output);
                     } else {
                         isProcessingCode = false;
                     }
-                    // Remove the backticks from the data
                     data.data = data.data.replace('```', '');
                 }
 
                 if (isProcessingCode) {
-                    // Append text to the code block element
                     let formattedCode = data.data;
                     if (formattedCode.includes('\n')) {
                         formattedCode = formattedCode.replace(/\n/g, '<br>');
                     }
                     codeBlockElement.innerHTML += `<span>${formattedCode}</span>`;
-
-                    // Check if the closing backticks are in the current data
                     if (!isProcessingCode) {
                         codeBlockElement = null;
                     }
