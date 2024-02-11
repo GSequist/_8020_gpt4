@@ -78,7 +78,7 @@
 
         if (body.style.backgroundColor === 'rgb(255, 255, 255)') {
         document.body.classList.toggle('darkmode');
-        toggleButton.src = 'static/toggle_white.png';
+        toggleButton.src = 'static/toggle_new_white.png';
         body.style.backgroundColor = 'rgb(50, 50, 50)';
         giantText.style.color = 'rgb(255, 255, 255)';
         toggleTitle.style.color = 'rgb(255, 255, 255)';
@@ -93,7 +93,7 @@
         input.classList.add('input-dark-theme');
         }
         else {
-        toggleButton.src = 'static/toggle_black.png';
+        toggleButton.src = 'static/toggle_new_black.png';
         body.style.backgroundColor = 'rgb(255, 255, 255)';
         giantText.style.color = 'rgb(0, 0, 0)';
         toggleTitle.style.color = 'rgb(0, 0, 0)';
@@ -109,37 +109,6 @@
         }
     });
     
-    //pointer light beam logic
-    document.addEventListener('DOMContentLoaded', function () {
-    const cursorLight = document.createElement('div');
-    cursorLight.id = 'cursor-light';
-    document.body.appendChild(cursorLight);
-    const toggleButton = document.querySelector('.toggleButton');
-
-    document.addEventListener('mousemove', function (e) {
-        cursorLight.style.left = e.pageX + 'px';
-        cursorLight.style.top = e.pageY + 'px';
-
-        // check if cursor is near ToggleButton
-        const rect = toggleButton.getBoundingClientRect();
-        const distanceX = Math.abs(e.pageX - (rect.left + rect.right) / 2);
-        const distanceY = Math.abs(e.pageY - (rect.top + rect.bottom) / 2);
-        const maxDistance = 80; 
-
-        if (distanceX <= maxDistance && distanceY <= maxDistance) {
-        cursorLight.style.background =
-            'radial-gradient(circle, yellow 80%, transparent 20%)';
-        cursorLight.style.width = '60px';
-        cursorLight.style.height = '60px';
-        } else {
-        cursorLight.style.background =
-            'radial-gradient(circle, yellow 30%, transparent 90%)';
-        cursorLight.style.width = '40px';
-        cursorLight.style.height = '40px';
-        }
-    });
-    });
-
     //submit & upload btn dynamic
     const submitButtonImage = submit.querySelector('img');
     const uploadButtonImage = uploadButton.querySelector('img');
