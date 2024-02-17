@@ -458,7 +458,8 @@
 
         if (data.type === 'sources') {
             const sources = data.sources.combined;
-            displaySources(sources);
+            const uniqueSources = new Set(sources);
+            displaySources(uniqueSources);
         }
     });
     function displaySources(sources) {

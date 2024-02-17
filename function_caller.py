@@ -37,7 +37,7 @@ client = AsyncOpenAI()
 
 
 async def chat_completion_request(messages, user_id, max_tokens=3000, functions=None):
-    MAX_RETRIES = 10
+    MAX_RETRIES = 3
     BASE_SLEEP_TIME = 2
     print(f"\n[chat_completion_request]: max tokens enforced: {max_tokens}")
     for attempt in range(MAX_RETRIES):
@@ -435,14 +435,16 @@ async def call_8020_function(messages, func_call, user_id=None, websocket=None):
             sources_sessions[user_id]["combined"] = sources
             print(f"[vectorstore]: sources_sessions updated: {sources_sessions}")
 
-            max_tokens = max_tokens
+            vectorstore_max_tokens = (
+                max_tokens - 1000
+            )  # minus 1000 to leave space for user query for context
             current_token_count = 0
             cleaned_descriptions = ""
             for document, score in descriptions:
                 page_content = document.page_content
                 tokens = tokenizer.encode(page_content)
-                remaining_tokens = max_tokens - current_token_count
-                print(f"[vectorstore]: remaining_tokens: {remaining_tokens}")
+                remaining_tokens = vectorstore_max_tokens - current_token_count
+                print(f"\n[vectorstore]: remaining_tokens: {remaining_tokens}")
 
                 if len(tokens) > remaining_tokens:
                     tokens = tokens[:remaining_tokens]
@@ -450,7 +452,7 @@ async def call_8020_function(messages, func_call, user_id=None, websocket=None):
                 cleaned_descriptions += tokenizer.decode(tokens) + "\n"
                 current_token_count += len(tokens)
 
-                if current_token_count >= max_tokens:
+                if current_token_count >= vectorstore_max_tokens:
                     break
             print(
                 f"\n[vectorstore]: Total tokens after cutting: {len(tokenizer.encode(cleaned_descriptions))}"

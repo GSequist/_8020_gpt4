@@ -8,19 +8,6 @@ from termcolor import colored
 
 
 ############################################################################################################
-# ##define user ID
-def generate_user_id():
-    return uuid.uuid4().hex
-
-
-##request userID from front-end
-def get_current_user_id(request_user_id):
-    if request_user_id is None:
-        request_user_id = generate_user_id()
-    return request_user_id
-
-
-############################################################################################################
 ##tokenizer
 
 tokenizer = tiktoken.get_encoding("cl100k_base")
