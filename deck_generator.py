@@ -157,10 +157,7 @@ def generate_prs(user_id, user_query, num_slides, context=None):
     if not os.path.exists(user_folder):
         os.makedirs(user_folder)
 
-    current_date = datetime.datetime.now().strftime("%Y%m%d")
-    presentation_file_name = (
-        f"{current_date}_{presentation_title.replace(' ', '_')}.pptx"
-    )
+    presentation_file_name = "your_deck.pptx"
     presentation_path = os.path.join(user_folder, presentation_file_name)
     prs.save(presentation_path)
 

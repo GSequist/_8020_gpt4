@@ -33,7 +33,8 @@
     }
 
     const userId = getUserId();
-    const socket = new WebSocket(`wss://${location.host}/ws/${userId}`);
+    const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const socket = new WebSocket(`${protocol}//${location.host}/ws/${userId}`);
 
     socket.addEventListener('open', function (event) {
         console.log('Connected to server with user ID:', userId);
@@ -82,7 +83,7 @@
         body.style.backgroundColor = 'rgb(50, 50, 50)';
         giantText.style.color = 'rgb(255, 255, 255)';
         toggleTitle.style.color = 'rgb(255, 255, 255)';
-        toggleTitle.innerHTML = '_dark_is_beautiful';
+        toggleTitle.innerHTML = '_dark_is_beautiful_';
         logo.src = 'static/logo_elements_white.png';
         uploadButtonImage.src = 'static/upload_8020_white.png';
         submitButtonImage.src = 'static/send_8020_white.png';
