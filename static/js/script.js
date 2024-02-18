@@ -175,7 +175,7 @@
     }
 
     function isTableFormat(data) {
-        return data.includes('»');
+        return data.includes('~');
     }
 
     let tableElement = null; 
@@ -249,7 +249,7 @@
             }
 
             if (isProcessingTable) {
-                let parts = data.data.split('»');
+                let parts = data.data.split('~');
                 parts.forEach((part, index) => {
                     let cells = part.split('|');
                     cells.forEach((cell, cellIndex) => {
