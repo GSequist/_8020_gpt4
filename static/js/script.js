@@ -2,6 +2,7 @@
     var responseInProgress = false;
     var hasClearedOutput = false;
     let cursorSpan = null;
+    let iconFlag = false;
 
     ////////////////////////////////////////////////////websockets  
 
@@ -71,13 +72,13 @@
 
     ////////////////////////////////////////////////////styling
     // toggle circle buttons logic
-    body.style.backgroundColor = 'rgb(255, 255, 255)';
+    body.style.backgroundColor = 'rgb(190, 190, 190)';
 
     toggleButton.addEventListener('click', function () {
-        const isLightTheme = getComputedStyle(body).getPropertyValue('--background-color').trim() === 'rgb(255, 255, 255)';
-        body.style.setProperty('--background-color', isLightTheme ? 'rgb(50, 50, 50)' : 'rgb(255, 255, 255)');
+        const isLightTheme = getComputedStyle(body).getPropertyValue('--background-color').trim() === 'rgb(190, 190, 190)';
+        body.style.setProperty('--background-color', isLightTheme ? 'rgb(50, 50, 50)' : 'rgb(190, 190, 190)');
 
-        if (body.style.backgroundColor === 'rgb(255, 255, 255)') {
+        if (body.style.backgroundColor === 'rgb(190, 190, 190)') {
         document.body.classList.toggle('darkmode');
         toggleButton.src = 'static/toggle_new_white.png';
         body.style.backgroundColor = 'rgb(50, 50, 50)';
@@ -95,7 +96,7 @@
         }
         else {
         toggleButton.src = 'static/toggle_new_black.png';
-        body.style.backgroundColor = 'rgb(255, 255, 255)';
+        body.style.backgroundColor = 'rgb(190, 190, 190)';
         giantText.style.color = 'rgb(0, 0, 0)';
         toggleTitle.style.color = 'rgb(0, 0, 0)';
         toggleTitle.innerHTML = '_8020_gpt4_';
@@ -115,19 +116,19 @@
     const uploadButtonImage = uploadButton.querySelector('img');
 
     submit.addEventListener('mouseover', function () {
-        submitButtonImage.src = body.style.backgroundColor === 'rgb(255, 255, 255)' 
+        submitButtonImage.src = body.style.backgroundColor === 'rgb(190, 190, 190)' 
             ? 'static/send_8020_pink.png' : 'static/send_8020_pink.png';
     });
     submit.addEventListener('mouseout', function () {
-        submitButtonImage.src = body.style.backgroundColor === 'rgb(255, 255, 255)' 
+        submitButtonImage.src = body.style.backgroundColor === 'rgb(190, 190, 190)' 
             ? 'static/send_8020_black.png' : 'static/send_8020_white.png';
     });
     uploadButton.addEventListener('mouseover', function () {
-        uploadButtonImage.src = body.style.backgroundColor === 'rgb(255, 255, 255)' 
+        uploadButtonImage.src = body.style.backgroundColor === 'rgb(190, 190, 190)' 
             ? 'static/upload_8020_pink.png' : 'static/upload_8020_pink.png';
     });
     uploadButton.addEventListener('mouseout', function () {
-        uploadButtonImage.src = body.style.backgroundColor === 'rgb(255, 255, 255)' 
+        uploadButtonImage.src = body.style.backgroundColor === 'rgb(190, 190, 190)' 
             ? 'static/upload_8020_black.png' : 'static/upload_8020_white.png';
     });
 
@@ -220,8 +221,14 @@
                 hasClearedOutput = true;
             }  
             document.getElementById('output').classList.remove('largeFont');
-            
-
+            if (!iconFlag) {
+                document.getElementById('output').classList.remove('largeFont');
+                iconSrc = 'static/logo_elements_white.png';
+                const iconContainer = document.getElementById('icon-container');
+                iconContainer.innerHTML = iconSrc ? `<img src="${iconSrc}" alt="" style="height: 25px;"/>` : '';
+                output.appendChild(iconContainer);
+                iconFlag = true;
+            }  
             if (data.error) {
                 console.log('Error received.');
                 output.innerHTML += `<span class="error">${data.error}</span>`;
@@ -429,7 +436,7 @@
         const data = JSON.parse(event.data);
 
         if (data.type === 'message') {
-            const isWhiteBackground = document.body.style.backgroundColor === 'rgb(255, 255, 255)';
+            const isWhiteBackground = document.body.style.backgroundColor === 'rgb(190, 190, 190)';
 
             let gifSrc = '';
             if (data.data.includes('web')) {
@@ -443,7 +450,7 @@
             } else if (data.data.includes('brainstorming')) {
                 gifSrc = isWhiteBackground ? 'static/gif_brainstorming_black.gif' : 'static/gif_brainstorming_white.gif'; 
             } else if (data.data.includes('deck')) {
-                gifSrc = isWhiteBackground ? 'static/gif_pptx.gif' : 'static/gif_pptx.gif'; 
+                gifSrc = isWhiteBackground ? 'static/pptx_black.gif' : 'static/pptx_white.gif'; 
             }
 
             const gifContainer = document.getElementById('process-gif-container');
@@ -504,6 +511,7 @@
 
         if (data.type === 'endOfMessage') {
             submit.disabled = false;
+            iconFlag = false;
 
             const gifContainer = document.getElementById('process-gif-container');
             gifContainer.innerHTML = ''; //clean 
