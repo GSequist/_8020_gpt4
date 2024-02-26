@@ -148,6 +148,10 @@
             submit.disabled = true;
             const sourcesContainer = document.getElementById('sources-container');
             sourcesContainer.innerHTML = '';
+            const fileContainer = document.querySelector('.file-container');
+            if (fileContainer) {
+                fileContainer.remove();
+            }
             const copyButton = document.querySelector('.copyButton');
             if (copyButton) {
                 copyButton.style.visibility = 'hidden';
@@ -160,11 +164,20 @@
             console.log("WebSocket state after sending:", socket.readyState);
             }
 
-    submit.addEventListener('click', sendMessage);
-    form.addEventListener('submit', function(event) {
-        event.preventDefault();
-        sendMessage(event);
-    });
+            //submit with click
+            submit.addEventListener('click', sendMessage);
+            form.addEventListener('submit', function(event) {
+                event.preventDefault();
+                sendMessage(event);
+            });
+            
+            //submit with Enter
+            input.addEventListener('keydown', function(event) {
+                if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault();
+                    sendMessage();  
+                }
+            });
     
     ////////////////////////////////////////////////listening to backend
     // helper for table rendering
