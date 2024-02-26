@@ -432,10 +432,15 @@
                     if (message.role === 'user') {
                         output.innerHTML += `<span class="userMessage">${message.content}</span><br><br>`;
                     } else {
+                        const iconSrc = 'static/logo_elements_white.png';
                         if (message.content.includes('\n')) {
                             message.content = message.content.replace(/\n/g, '<br>');
                         }
-                        output.innerHTML += `<span>${message.content}</span><br><br>`;
+                        output.innerHTML += `<img src="${iconSrc}" alt="" style="height: 20px; border-radius: 50%; vertical-align: middle; margin-right: 5px;">` + `<span>${message.content}</span><br><br>`;
+                        var hr = document.createElement('hr');
+                        hr.style.borderTop = '0.5px dashed grey';
+                        hr.style.borderBottom = 'none';
+                        output.appendChild(hr);
                     }
                 });
                 hasLoadedPreviousConversations = true;
