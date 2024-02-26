@@ -24,6 +24,7 @@ from tools import (
     internet_search,
     doc_vectorstore,
     dalle_3,
+    gif_maker,
     ai_app_ideation,
 )
 
@@ -260,6 +261,22 @@ _8020_functions = [
                 "query": {
                     "type": "string",
                     "description": """What image user wants?""",
+                },
+            },
+            "required": ["query"],
+        },
+    },
+    {
+        "name": "gif_maker",
+        "description": """Use this function to create gifs. 
+        Suggest to user some ideas for the image used for creating gif before using the function.
+        """,
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": """What gif user wants?""",
                 },
             },
             "required": ["query"],
@@ -526,17 +543,66 @@ async def call_8020_function(messages, func_call, user_id=None, websocket=None):
             print("\n[dalle3]: stack trace:")
             traceback.print_exc()
 
-            cleaned_web = f"the function to create images failed with this error {e} please let the user know"
+            full_size_image_path = f"the function to create images failed with this error {e} please let the user know"
 
         messages.append(
             {
                 "role": "function",
                 "name": func_call["name"],
-                "content": f"Function {func_call['name']} executed successfully. The image is saved in user's workspace {full_size_image_path}.",
+                "content": f"Function {func_call['name']} finished. The result {str(full_size_image_path)}.",
             }
         )
         try:
             print("\n[dalle3]: got image, sending")
+            response = await chat_completion_request(
+                messages, user_id, functions=_8020_functions
+            )
+            return response
+        except Exception as e:
+            print(type(e))
+            raise Exception("Function chat request failed")
+
+    elif func_call["name"] == "gif_maker":
+        message = json.dumps(
+            {"type": "message", "data": ">creating image, please wait.."}
+        )
+        await websocket.send_text(message)
+        try:
+            parsed_output = json.loads(func_call["arguments"])
+
+            query = parsed_output.get("query", "")
+            print(f"\n[gif_maker]:query: {query}")
+
+            gif = await gif_maker(query, user_id)
+
+            with open(gif, "rb") as gif_file:
+                gif_bytes = gif_file.read()
+                base64_gif = base64.b64encode(gif_bytes).decode("utf-8")
+                gif_url = f"data:image/gif;base64,{base64_gif}"
+
+            if user_id not in url_sessions:
+                url_sessions[user_id] = {}
+            url_sessions[user_id]["img_url"] = gif_url
+
+        except Exception as e:
+            import traceback
+
+            print("\n[gif_maker]: function execution failed")
+            print("\n[gif_maker]: error message:", e)
+            print("\n[gif_maker]: stack trace:")
+            traceback.print_exc()
+
+            gif = f"the function to create images failed with this error {e} please let the user know"
+
+        messages.append(
+            {
+                "role": "function",
+                "name": func_call["name"],
+                "content": f"Function {func_call['name']} executed successfully. The image is saved in user's workspace {str(gif)}.",
+            }
+        )
+        try:
+            print("\n[gif_maker]: got image, sending")
             response = await chat_completion_request(
                 messages, user_id, functions=_8020_functions
             )

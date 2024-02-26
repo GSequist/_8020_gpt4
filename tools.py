@@ -3,7 +3,10 @@
 import traceback
 import base64
 import re
-from utils import sources_url_sessions
+from PIL import Image, ImageSequence
+import numpy as np
+import os
+from utils import sources_url_sessions, WORK_FOLDER
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
 from langchain_community.tools import DuckDuckGoSearchResults
@@ -135,6 +138,48 @@ async def dalle_3(query: str):
     )
 
     return base64.b64decode(image_response.data[0].b64_json)
+
+
+#####################################################################################################
+## gif maker
+
+
+async def gif_maker(query: str, user_id: str):
+    image_response = await client.images.generate(
+        model="dall-e-3",
+        prompt=f"create a sprite sheet WITH ONLY ONE ROW OF SPRITES of a {query} remember the image will be later converted to a gif by dividing into frames horizontally and there must be only one row of sprites.",
+        n=1,
+        size="1024x1024",
+        response_format="b64_json",
+    )
+
+    base64_img = base64.b64decode(image_response.data[0].b64_json)
+
+    user_folder = os.path.join(WORK_FOLDER, user_id)
+    if not os.path.exists(user_folder):
+        os.mkdir(user_folder)
+    full_size_image_path = os.path.join(user_folder, "image.png")
+    with open(full_size_image_path, "wb") as file:
+        file.write(base64_img)
+
+    sprite_sheet = Image.open(full_size_image_path)
+    num_frames = 6
+    sprite_width = sprite_sheet.width // num_frames
+    sprite_height = sprite_sheet.height
+
+    frames = []
+    for i in range(num_frames):
+        frame = sprite_sheet.crop(
+            (i * sprite_width, 0, (i + 1) * sprite_width, sprite_height)
+        )
+        frames.append(frame)
+
+    gif_path = os.path.join(user_folder, "your_gif.gif")
+    frames[0].save(
+        gif_path, save_all=True, append_images=frames[1:], duration=100, loop=0
+    )
+
+    return gif_path
 
 
 #####################################################################################################

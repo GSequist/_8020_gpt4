@@ -153,6 +153,7 @@
 
       #output {
         margin-top: 20px;
+        height: 70vh;
         overflow-y: auto;
         padding: 5px;
         color: rgb(0, 0, 0);
