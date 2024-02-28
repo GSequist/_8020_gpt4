@@ -522,6 +522,18 @@
         }
     }
 
+    //listen for proofreading
+    socket.addEventListener('message', function(event) {
+        const data = JSON.parse(event.data);
+        if (data.type === 'proofreading') {
+        const proofreadDoc = data.data; 
+        console.log('Proofreading data:', proofreadDoc);
+        const formattedContent = proofreadDoc.replace(/\n/g, '<br>'); 
+        output.innerHTML += `<br><span>${formattedContent}</span><br>`;
+        }
+    });
+
+
     
     // listen for the end of messages
     socket.addEventListener('message', function (event) {

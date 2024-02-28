@@ -16,6 +16,7 @@ from utils import (
     WORK_FOLDER,
     extract_sources_and_pages,
     sources_sessions,
+    proofreading_sessions,
     url_sessions,
     conversations,
     Conversation,
@@ -27,6 +28,7 @@ from tools import (
     gif_maker,
     ai_app_ideation,
 )
+from proofreader import proofread
 
 load_dotenv()
 
@@ -340,6 +342,21 @@ _8020_functions = [
                 },
             },
             "required": ["query", "no_pages", "context"],
+        },
+    },
+    {
+        "name": "proofreader",
+        "description": """Use this function to proofread documents and correct their grammar.
+        """,
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "which_doc": {
+                    "type": "string",
+                    "description": """Which document from the uploaded docs the user wants you to proofread?""",
+                },
+            },
+            "required": ["which_doc"],
         },
     },
 ]
@@ -769,6 +786,67 @@ async def call_8020_function(messages, func_call, user_id=None, websocket=None):
                 "role": "function",
                 "name": func_call["name"],
                 "content": f"Function {func_call['name']} executed successfully. The path to file: {str(launch_deck)}",
+            }
+        )
+        try:
+            response = await chat_completion_request(
+                messages, user_id, functions=_8020_functions
+            )
+            return response
+        except Exception as e:
+            print(type(e))
+            raise Exception("Function chat request failed")
+
+    elif func_call["name"] == "proofreader":
+        message = json.dumps({"type": "message", "data": ">thinking, please wait.."})
+        await websocket.send_text(message)
+        try:
+            parsed_output = json.loads(func_call["arguments"])
+            print(f"parsed_output: {parsed_output}")
+
+            user_folder = os.path.join(WORK_FOLDER, user_id)
+            uploaded_file_paths = [
+                os.path.join(user_folder, filename)
+                for filename in os.listdir(user_folder)
+            ]
+
+            which_doc = parsed_output["which_doc"]
+
+            which_doc_filepath = next(
+                (path for path in uploaded_file_paths if which_doc in path), None
+            )
+            if not which_doc_filepath:
+                raise ValueError(
+                    f"[proofreader]: file matching '{which_doc}' not found in user's workspace."
+                )
+
+            print(f"which_doc_filepath in proofreader: {which_doc_filepath}")
+
+            proofreader = await to_thread(
+                proofread,
+                user_id,
+                which_doc_filepath,
+            )
+            combined_responses = "\n".join(proofreader)
+            if user_id not in proofreading_sessions:
+                proofreading_sessions[user_id] = {}
+            proofreading_sessions[user_id] = combined_responses
+
+        except Exception as e:
+            import traceback
+
+            print("Function execution failed")
+            print("Error message:", e)
+            print("Stack trace:")
+            traceback.print_exc()
+
+            cleaned_descriptions = f"the function to proofread docs failed with this error {e} please let the user know"
+
+        messages.append(
+            {
+                "role": "function",
+                "name": func_call["name"],
+                "content": f"Function {func_call['name']} finished pls let the user know",
             }
         )
         try:

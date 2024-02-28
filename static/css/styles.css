@@ -250,7 +250,7 @@
         background-color: rgba(189, 188, 188, 0.253);
         color: white;
         padding: 5px 5px;
-        border: none;
+        border: .1px solid #ffffff;
         border-radius: 5px;
         cursor: pointer;
         display: inline-block;

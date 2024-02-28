@@ -20,6 +20,7 @@ sources_url_sessions = {}
 sources_sessions = {}
 user_sessions = {}
 conversations = {}
+proofreading_sessions = {}
 
 ############################################################################################################
 ## work folder

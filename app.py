@@ -23,6 +23,7 @@ from utils import (
     sources_url_sessions,
     sources_sessions,
     user_sessions,
+    proofreading_sessions,
     conversations,
     WORK_FOLDER,
 )
@@ -131,7 +132,7 @@ async def upload_file(user_id: str, file: UploadFile = File(...)) -> Dict[str, s
     file_size = os.fstat(file.file.fileno()).st_size
     if total_size + file_size > MAX_TOTAL_SIZE_MB * 1024 * 1024:
         return {"status": "error", "message": ">file size exceeded"}
-    file_path = f"{WORK_FOLDER}/{user_id}/{file.filename}"
+    file_path = os.path.join(WORK_FOLDER, user_id, file.filename)
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
@@ -246,6 +247,14 @@ async def handle_message(user_id, data, websocket):
 
                 await websocket.send_text(message)
                 await asyncio.sleep(0.01)
+
+        if user_id in proofreading_sessions:
+            proofread_doc = proofreading_sessions[user_id]
+            print(f"Type of proofread_doc: {type(proofread_doc)}")
+            message = json.dumps({"type": "proofreading", "data": proofread_doc})
+            await websocket.send_text(message)
+            print(f"\n[handle_message]: proofreading emitted: {proofread_doc}")
+            proofreading_sessions[user_id] = ""
 
         if user_id in url_sessions:
             payload = {
