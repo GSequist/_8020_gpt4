@@ -37,7 +37,7 @@ def doc_vectorstore(query: str, k, user_id: str) -> str:
                 query,
                 k=k,
             )
-            sorted_retrieval = sorted(retrieval, key=lambda x: x[1], reverse=True)
+            sorted_retrieval = sorted(retrieval, key=lambda x: x[1])
             print(
                 f"[doc_vectorstore]: vectorstore retrieval sorted: {sorted_retrieval}"
             )
