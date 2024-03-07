@@ -57,16 +57,9 @@ def extract_sources_and_pages(results):
 
 ############################################################################################################
 ##class conversation
-
-
 class Conversation:
-    def __init__(
-        self, max_length=50
-    ):  # if an average message is around 100 characters long
-        # (which might be a reasonable estimate for a chat-based interface,
-        # though the real number could be higher or lower depending on
-        # specific use case), 50 messages would mean around 5,000 characters of text,
-        # or about 5KB of memory.
+    def __init__(self, max_length=50):
+        """holds the conversation loop"""
         self.conversation_history = []
         self.max_length = max_length
 

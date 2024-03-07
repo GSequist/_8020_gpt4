@@ -59,7 +59,6 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str):
     user_sessions[user_id] = websocket
 
     if user_id not in conversations:
-        conversations[user_id] = Conversation()
         await initialize_conversation(user_id)
     else:
         await send_previous_conversations(user_id, websocket)
@@ -132,11 +131,17 @@ async def upload_file(user_id: str, file: UploadFile = File(...)) -> Dict[str, s
     file_size = os.fstat(file.file.fileno()).st_size
     if total_size + file_size > MAX_TOTAL_SIZE_MB * 1024 * 1024:
         return {"status": "error", "message": ">file size exceeded"}
-    file_path = os.path.join(WORK_FOLDER, user_id, file.filename)
-    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    user_folder = os.path.join(WORK_FOLDER, user_id)
+    os.makedirs(user_folder, exist_ok=True)
+    file_path = os.path.join(user_folder, file.filename)
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
-    process_documents(user_id, os.path.dirname(file_path))
+
+    img_extensions = {".png", ".jpg", ".webp"}
+    file_extension = os.path.splitext(file.filename)[1].lower()
+
+    if file_extension not in img_extensions:
+        process_documents(user_id, file_path, user_folder)
     return {"status": "success", "fileName": file.filename}
 
 

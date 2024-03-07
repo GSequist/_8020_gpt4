@@ -1,8 +1,6 @@
 import os
 import shutil
-import glob
 from typing import List
-from dotenv import load_dotenv
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.text_splitter import CharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
@@ -70,30 +68,13 @@ def load_single_document(file_path: str) -> List[Document]:
         raise ValueError(f"[load_single_document]: unsupported file extension '{ext}'")
 
 
-def load_documents(source_dir: str) -> List[Document]:
-    all_files = []
-    for ext in LOADER_MAPPING:
-        all_files.extend(
-            glob.glob(os.path.join(source_dir, f"**/*{ext}"), recursive=True)
-        )
-    all_data = []
-    for file in all_files:
-        docs = load_single_document(file)
-        all_data.extend(docs)
-    print(
-        f"[load_documents]: Loaded a total of {len(all_data)} documents from {source_dir}"
-    )
-
-    return all_data
-
-
-def process_documents(user_id: str, user_folder: str) -> None:
+def process_documents(user_id: str, file_path: str, user_folder: str) -> None:
     """
     load documents, split in chunks for each user
     """
     try:
         print(f"[process_documents]: loading documents from {user_folder}")
-        documents = load_documents(user_folder)
+        documents = load_single_document(file_path)
         if not documents:
             print("[process_documents]: no new documents to load")
             return
@@ -123,7 +104,7 @@ def process_documents(user_id: str, user_folder: str) -> None:
         GLOBAL_CHUNKED_TEXTS[user_id] = rough_texts  # store the chunks for the user
         print(
             f"\n[process_documents]: len chunks stored in GLOBAL_CHUNKED_TEXTS for user {len(rough_texts)}"
-            f"\n[process_documents]: the rough texts look like this {rough_texts}"
+            #     f"\n[process_documents]: the rough texts look like this {rough_texts}"
         )
 
         text_splitter = RecursiveCharacterTextSplitter(

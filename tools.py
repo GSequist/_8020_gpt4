@@ -63,7 +63,7 @@ def internet_search(user_id, query_1, query_2):
             wrapper = DuckDuckGoSearchAPIWrapper(max_results=1)
             search = DuckDuckGoSearchResults(api_wrapper=wrapper)
             results = search.run(query)
-            print(f"\n[internet_search]: web search results for '{query}': {results}")
+            # print(f"\n[internet_search]: web search results for '{query}': {results}")
             try:
                 source_link = extract_links(results)
                 print(f"\n[internet_search]: source link: {source_link}")
@@ -80,12 +80,14 @@ def internet_search(user_id, query_1, query_2):
             result_str = (
                 f"Query: {query}\nSearch Results: {results}\nFetch Results: {fetch}\n"
             )
+            result_str = result_str.strip()
+            result_str = re.sub(r"\s+", " ", result_str)
             all_results.append(result_str)
         except Exception as e:
             tb = traceback.format_exc()
             error_message = f"Query: {query}\nError: An error occurred during search.\nTraceback: {tb}\n"
             all_results.append(error_message)
-        print(f"\n[internet_search]: all results: {all_results}")
+        # print(f"\n[internet_search]: all results: {all_results}")
     return "\n".join(all_results)
 
 
@@ -104,20 +106,20 @@ def web_fetch(query, url):
     """fetch the web contents"""
     web_text_loader = WebBaseLoader(url)
     web_text = web_text_loader.load()
-    print(f"\n[web_fetch]: web text loaded {web_text}")
+    # print(f"\n[web_fetch]: web text loaded {web_text}")
     text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
     web_text_cuts = text_splitter.split_documents(web_text)
     embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
     try:
         web_faiss = FAISS.from_documents(web_text_cuts, embeddings)
-        print(f"\n[web_fetch]: FAISS index loaded for web content")
+        # print(f"\n[web_fetch]: FAISS index loaded for web content")
         retrieval = web_faiss.similarity_search_with_score(
             query,
             k=2,
         )
-        print(f"\n[web_fetch]: vectorstore retrieval: {retrieval}")
-        sorted_retrieval = sorted(retrieval, key=lambda x: x[1], reverse=True)
-        print(f"\n[web_fetch]: vectorstore retrieval sorted: {sorted_retrieval}")
+        # print(f"\n[web_fetch]: vectorstore retrieval: {retrieval}")
+        sorted_retrieval = sorted(retrieval, key=lambda x: x[1])
+        # print(f"\n[web_fetch]: vectorstore retrieval sorted: {sorted_retrieval}")
         return sorted_retrieval
     except Exception as e:
         print(f"error in web_fetch: {e}")
@@ -197,3 +199,6 @@ def ai_app_ideation(query: str):
     retrieval = db.similarity_search_with_score(query, k=10)
     sorted_retrieval = sorted(retrieval, key=lambda x: x[1], reverse=True)
     return sorted_retrieval
+
+
+#####################################################################################################
