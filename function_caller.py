@@ -19,7 +19,6 @@ from utils import (
     proofreading_sessions,
     url_sessions,
     conversations,
-    Conversation,
 )
 from tools import (
     internet_search,
@@ -263,8 +262,8 @@ _8020_functions = [
                 "tokens": {
                     "type": "string",
                     "enum": ["3000", "10000", "100000"],
-                    "description": """Always ask the user how large is the document uploaded and 
-                    how much she wants the AI to see. Small review is 3000 tokens, medium review is 10000 tokens, large review is 100000 tokens.""",
+                    "description": """Always ask the user how large is the document uploaded 
+                    then choose 3000 for small, 10000 for medium and 100000 for large documents.""",
                 },
                 "expectation": {
                     "type": "string",

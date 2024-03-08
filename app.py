@@ -1,9 +1,12 @@
 """please for any changes to code let me know thanks @george"""
 
 import os
+import io
 from urllib.parse import unquote
 from typing import Dict
 import gc
+from dotenv import load_dotenv
+from openai import AsyncOpenAI
 from fastapi import FastAPI, WebSocket, Request, WebSocketDisconnect, HTTPException
 from fastapi import FastAPI, UploadFile, File
 from fastapi.responses import FileResponse
@@ -24,10 +27,15 @@ from utils import (
     sources_sessions,
     user_sessions,
     proofreading_sessions,
+    audio_preferences,
     conversations,
     WORK_FOLDER,
 )
 
+load_dotenv()
+
+
+client = AsyncOpenAI()
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
@@ -226,6 +234,12 @@ async def handle_message(user_id, data, websocket):
     print(f"\n[handle_message] userid received: {user_id}")
     query = data.get("message")
 
+    data_type = data.get("type")
+
+    if data_type == "toggle_audio":
+        audio_preferences[user_id] = data.get("isAudioEnabled", False)
+        return
+
     if query:
         print(f"\n[handle_message]: inserting chat text...{query}")
 
@@ -252,6 +266,23 @@ async def handle_message(user_id, data, websocket):
 
                 await websocket.send_text(message)
                 await asyncio.sleep(0.01)
+        if audio_preferences.get(user_id, False):
+            spoken_response = await client.audio.speech.create(
+                model="tts-1",
+                voice="nova",
+                input=compl_response,
+                response_format="mp3",
+            )
+
+            buffer = io.BytesIO()
+            buffer.write(spoken_response.content)
+            buffer.seek(0)
+            audio_data = buffer.read()
+
+            await websocket.send_bytes(audio_data)
+            print(f"\n[handle_message]: audio emitted {audio_data[:100]}")
+        else:
+            print(f"\n[handle_message]: audio not requested")
 
         if user_id in proofreading_sessions:
             proofread_doc = proofreading_sessions[user_id]

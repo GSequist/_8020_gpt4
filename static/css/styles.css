@@ -1,6 +1,6 @@
       body {
         margin: 0;
-        font-family: Arial, Helvetica, sans-serif;
+        font-family: 'open sans', sans-serif;
         font-size: .9em;
         display: flex;
         align-items: center;
@@ -9,12 +9,25 @@
         --background-color: rgb(190, 190, 190);
         background-color: var(--background-color);
         transition: background-color 0.5s ease;
+        background-image: linear-gradient(
+          270deg, 
+          rgba(255, 255, 255, 0.1),
+          rgba(0, 255, 255, 0.1) 25%,
+          rgba(0, 0, 255, 0.1) 50%,
+          rgba(255, 0, 255, 0.1) 75%,
+          rgba(255, 255, 255, 0.1)
+        );
       }
       
-      .logo-wrapper{
+      .logo-wrapper {
         position: absolute;
-        top: 0vh;
-        left: 0vw;
+        top: 50%; 
+        right: 1vw;
+        transform: translateY(-50%); /* Adjust for the element's own height */
+      }
+
+      .giant-logo{
+        width: 20vw;
       }
 
       .giant-text {
@@ -35,9 +48,8 @@
         left: 0vw;
         filter: invert(100%);
         line-height: .9;
-        color: rgba(170, 29, 29, 0.8); 
+        color: rgba(0,0,0, 0.8); 
         clip-path: inset(5.1vh 0 0 19vw);
-
         text-shadow: 
             0px 0px 2px rgba(0, 0, 0, 0.3), 
             0px 0px 3px rgba(0, 0, 0, 0.3), 
@@ -65,9 +77,14 @@
         cursor: pointer;
       }
 
+      .voiceButton {
+        width: 1.5vw;
+        cursor: pointer;
+      }
+
       .userMessage {
         font-weight: bold;
-        color: #EB0173;
+        /* color: #EB0173; */
       }
 
       .container {
@@ -237,7 +254,7 @@
 
       .largeFont {
         font-size: 2.5em !important;
-        text-shadow: 0 0 20px rgba(0, 0, 0, 0.5) !important;
+        text-shadow: 0 0 5px rgba(0, 0, 0, 0.5) !important;
       }
 
       /* download button */
@@ -380,19 +397,18 @@
         #messages {
           bottom: 20vh;
         }
-        .invert-giant-text {
-          display: none;
-        }
       }
 
       @media screen and (max-width: 767px) {
-        
-
         #output {
           display: none;
         }
 
-        .invert-giant-text {
+        .toggleButton{
+          display: none;
+        }
+
+        .voiceButton {
           display: none;
         }
 
@@ -400,7 +416,7 @@
           display: none;
         }
 
-        .giant-text {
+        .logo-wrapper {
           display: none;
         }
 

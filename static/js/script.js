@@ -3,7 +3,10 @@
     var hasClearedOutput = false;
     let cursorSpan = null;
     let iconFlag = false;
-
+    let isAudioEnabled = false;
+    let audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    
+    
     ////////////////////////////////////////////////////websockets  
 
 
@@ -65,10 +68,11 @@
     const gifContainer = document.getElementById('process-gif-container');
     const toggleButton = document.querySelector('.toggleButton');
     const body = document.querySelector('body');
-    const giantText = document.querySelector('.giant-text');
     const toggleTitle = document.querySelector('.toggleTitle');
     const logo = document.querySelector('.logo');
     const copyButton = document.querySelector('.copyButton');
+    const voiceButton = document.querySelector('.voiceButton');
+    const giantLogo = document.querySelector('.giant-logo');
 
     ////////////////////////////////////////////////////styling
     // toggle circle buttons logic
@@ -81,8 +85,9 @@
         if (body.style.backgroundColor === 'rgb(190, 190, 190)') {
         document.body.classList.toggle('darkmode');
         toggleButton.src = 'static/toggle_new_white.png';
+        voiceButton.src = 'static/voice_white.png';
         body.style.backgroundColor = 'rgb(50, 50, 50)';
-        giantText.style.color = 'rgb(255, 255, 255)';
+        giantLogo.src = 'static/logo_elements_large_white.png';
         toggleTitle.style.color = 'rgb(255, 255, 255)';
         toggleTitle.innerHTML = '_dark_is_beautiful_';
         logo.src = 'static/logo_elements_white.png';
@@ -96,10 +101,11 @@
         }
         else {
         toggleButton.src = 'static/toggle_new_black.png';
+        voiceButton.src = 'static/voice.png';
         body.style.backgroundColor = 'rgb(190, 190, 190)';
-        giantText.style.color = 'rgb(0, 0, 0)';
+        giantLogo.src = 'static/logo_elements_large_black.png';
         toggleTitle.style.color = 'rgb(0, 0, 0)';
-        toggleTitle.innerHTML = '_8020_gpt4_';
+        toggleTitle.innerHTML = '_8020_ai+_';
         logo.src = 'static/logo_elements_black.png';
         uploadButtonImage.src = 'static/upload_8020_black.png';
         submitButtonImage.src = 'static/send_8020_black.png';
@@ -224,6 +230,9 @@
 
     // listen for response from server
     socket.addEventListener('message', function (event) {
+            if (event.data instanceof Blob) {
+            return;
+        }
         const data = JSON.parse(event.data);
 
         if (data.type === 'response') {
@@ -236,9 +245,10 @@
             document.getElementById('output').classList.remove('largeFont');
             if (!iconFlag) {
                 document.getElementById('output').classList.remove('largeFont');
-                iconSrc = 'static/logo_elements_white.png';
+                iconSrc = body.style.backgroundColor === 'rgb(190, 190, 190)' 
+                ? 'static/logo_elements_black.png' : 'static/logo_elements_white.png';
                 const iconContainer = document.getElementById('icon-container');
-                iconContainer.innerHTML = iconSrc ? `<img src="${iconSrc}" alt="" style="height: 25px;"/>` : '';
+                iconContainer.innerHTML = iconSrc ? `<img src="${iconSrc}" alt="" style="height: 20px;"/>` : '';
                 output.appendChild(iconContainer);
                 iconFlag = true;
             }  
@@ -324,8 +334,66 @@
     }
     });
 
+
+    document.querySelector('.voiceButton').addEventListener('click', async function() {
+        console.log('voiceButton clicked');
+        isAudioEnabled = !isAudioEnabled; 
+        socket.send(JSON.stringify({ type: "toggle_audio", isAudioEnabled: isAudioEnabled }));
+        if (isAudioEnabled) {
+            console.log("Audio playback enabled. Waiting for audio data...");
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+        } else {
+            console.log("Audio playback disabled.");
+            if (audioContext.state === 'running') {
+                audioContext.suspend();
+            }
+        }
+        });
+
+    socket.addEventListener('message', function (event) {
+    if (!isAudioEnabled) {
+        console.log("Audio playback is disabled. Ignoring incoming audio data.");
+        return; 
+    }
+    if (event.data instanceof Blob) {
+        processAndPlayAudioBlob(event.data);
+        console.log("Audio chunk loaded, process and play it here.");
+    }
+    });
+
+    function processAndPlayAudioBlob(audioBlob) {
+        const reader = new FileReader();
+        reader.onload = function() {
+            const arrayBuffer = reader.result;
+            console.log("ArrayBuffer size:", arrayBuffer.byteLength);
+            console.log("Data type:", typeof arrayBuffer);
+                console.log("Data instance:", arrayBuffer instanceof ArrayBuffer);
+                console.log("Data length:", arrayBuffer.byteLength);
+            decodeAndPlay(arrayBuffer);
+            }
+            reader.readAsArrayBuffer(audioBlob);
+        };
+
+    function decodeAndPlay(arrayBuffer) {
+        audioContext.decodeAudioData(arrayBuffer, function(decodedData) {
+            const source = audioContext.createBufferSource();
+            source.buffer = decodedData;
+            source.connect(audioContext.destination);
+            source.start(); 
+            console.log("Audio should be playing now.");
+        }, function(e) {
+            console.error("Error with decoding audio data:", e);
+        });
+    }
+
     //helper for images rendering
     socket.addEventListener('message', function (event) {
+        if (event.data instanceof Blob) {
+            // Ignore binary data and continue listening
+            return;
+        }
         const data = JSON.parse(event.data);
 
         if (data.type === 'response' && data.payload && data.payload.img_url) {
@@ -400,6 +468,9 @@
 
     // listen for new user message
     socket.addEventListener('message', function (event) {
+        if (event.data instanceof Blob) {
+            return;
+        }
         const data = JSON.parse(event.data);
 
         if (data.type === 'new_user_message') {
@@ -417,6 +488,9 @@
 
     // listen for 'previous_conversations' event
     socket.addEventListener('message', function (event) {
+        if (event.data instanceof Blob) {
+            return;
+        }
         const data = JSON.parse(event.data);
 
         if (data.type === 'previous_conversations') {
@@ -432,7 +506,8 @@
                     if (message.role === 'user') {
                         output.innerHTML += `<span class="userMessage">${message.content}</span><br><br>`;
                     } else {
-                        const iconSrc = 'static/logo_elements_white.png';
+                        const iconSrc = body.style.backgroundColor === 'rgb(190, 190, 190)' 
+                        ? 'static/logo_elements_black.png' : 'static/logo_elements_white.png';
                         if (message.content.includes('\n')) {
                             message.content = message.content.replace(/\n/g, '<br>');
                         }
@@ -451,6 +526,9 @@
 
     //listen to signalling messages
     socket.addEventListener('message', function (event) {
+        if (event.data instanceof Blob) {
+            return;
+        }
         const data = JSON.parse(event.data);
 
         if (data.type === 'message') {
@@ -480,6 +558,9 @@
 
     // listen for 'sources' event
     socket.addEventListener('message', function(event) {
+        if (event.data instanceof Blob) {
+            return;
+        }
         const data = JSON.parse(event.data);
 
         if (data.type === 'sources') {
@@ -502,6 +583,9 @@
 
     //listen for sources url
     socket.addEventListener('message', function(event) {
+        if (event.data instanceof Blob) {
+            return;
+        }
         const data = JSON.parse(event.data);
         if (data.type === 'sources_url') {
             const sourceUrl = data.sources_url;
@@ -524,6 +608,9 @@
 
     //listen for proofreading
     socket.addEventListener('message', function(event) {
+        if (event.data instanceof Blob) {
+            return;
+        }
         const data = JSON.parse(event.data);
         if (data.type === 'proofreading') {
         const proofreadDoc = data.data; 
@@ -537,6 +624,9 @@
     
     // listen for the end of messages
     socket.addEventListener('message', function (event) {
+        if (event.data instanceof Blob) {
+            return;
+        }
         const data = JSON.parse(event.data);
 
         if (data.type === 'endOfMessage') {
@@ -582,6 +672,9 @@
 
     // copy button logic listener
     socket.addEventListener('message', function (event) {
+        if (event.data instanceof Blob) {
+            return;
+        }
         const data = JSON.parse(event.data);
 
         if (data.type === 'last_assistant_message') {
@@ -708,17 +801,9 @@
             if (!stopTypewriter) {
                 outputField.innerHTML = '';
                 const messages = [
-                'hiii, ✌️ i am now even more intelligent .. try me',
-                'tell me your idea and ask me to brainstorm on it..',
-                'they say i am IQ 140+',
-                'i can do tables, you know..',
-                'your documents compressed to a Q&A box',
-                'i can create presentation, try me..',
-                'please remember if you leave the page open too long your browser forgets your id, your docs will be deleted and ill forget our conversation',
-                'i have many ideas about how AI can be used for your clients, ask me..',
-                'i am good at images too..',
-                'google? aww that is so 2022, ask me instead',
-                'i am ofc fluent in code too..',
+                'hello, welcome',
+                'ask away',
+                'I am here to help',
                 ];
                 const index = messages.indexOf(text);
                 text = messages[(index + 1) % messages.length];
