@@ -53,9 +53,9 @@ async def chat_completion_request(messages, user_id, max_tokens=3000, functions=
                 msg_tokens = len(tokenizer.encode(msg["content"]))
                 total_tokens += msg_tokens
 
-            print(
-                f"\n[chat_completion_request]: messages entering the token cutter loop: {messages_copy}"
-            )
+            # print(
+            #     f"\n[chat_completion_request]: messages entering the token cutter loop: {messages_copy}"
+            # )
             print(
                 f"\n[chat_completion_request]: Total tokens before token cutter loop: {total_tokens}"
             )
@@ -166,11 +166,18 @@ async def chat_completion_request(messages, user_id, max_tokens=3000, functions=
                 """,
             }
 
-            messages_copy = [retrieve_folder_message, focus_message] + messages
+            messages_copy = [retrieve_folder_message, focus_message] + messages_copy
 
-            print(
-                f"\n[chat_completion_request]: sending the following messages to OpenAI: {messages}"
-            )
+            messages_str = str(messages_copy)
+            if len(messages_str) > 800:
+                print(
+                    f"\n[chat_completion_request]: sending the following messages to OpenAI: "
+                    f"{messages_str[:10000]}...{messages_str[-2000:]}"
+                )
+            else:
+                print(
+                    f"\n[chat_completion_request]: sending the following messages to OpenAI: {messages_str}"
+                )
 
             response = await client.chat.completions.create(
                 model="gpt-4-0125-preview",
@@ -261,9 +268,9 @@ _8020_functions = [
                 },
                 "tokens": {
                     "type": "string",
-                    "enum": ["3000", "10000", "100000"],
+                    "enum": ["3000", "10000", "50000"],
                     "description": """Always ask the user how large is the document uploaded 
-                    then choose 3000 for small, 10000 for medium and 100000 for large documents.""",
+                    then choose 3000 for small, 10000 for medium and 50000 for large documents.""",
                 },
                 "expectation": {
                     "type": "string",
@@ -571,7 +578,7 @@ async def call_8020_function(messages, func_call, user_id=None, websocket=None):
         )
         try:
             print("\n[web_search]: got search results, summarizing content")
-            return messages, max_tokens
+            return messages, local_max_tokens
         except Exception as e:
             print(type(e))
             raise Exception("web_search function failed")
@@ -600,8 +607,8 @@ async def call_8020_function(messages, func_call, user_id=None, websocket=None):
                 k = 10
             elif max_tokens == 10000:
                 k = 40
-            elif max_tokens == 100000:
-                k = 120
+            elif max_tokens == 50000:
+                k = 100
             else:
                 k = max_tokens / 100
 
@@ -658,7 +665,7 @@ async def call_8020_function(messages, func_call, user_id=None, websocket=None):
         )
         try:
             print("\n[vectorstore]: got search results, summarizing content")
-            return messages, max_tokens
+            return messages, vectorstore_max_tokens
         except Exception as e:
             print(type(e))
             raise Exception("vectorstore function failed")

@@ -327,7 +327,7 @@ async def handle_message(user_id, data, websocket):
 
         conversations[user_id].abbreviate_function_messages()
 
-        conversations[user_id].display_conversation()
+        # conversations[user_id].display_conversation()
 
         message = json.dumps({"type": "endOfMessage", "data": ""})
         await websocket.send_text(message)
