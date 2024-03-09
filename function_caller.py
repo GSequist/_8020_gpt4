@@ -461,6 +461,8 @@ _8020_functions = [
         "name": "proofreader",
         "description": """Use this function to proofread documents and correct their grammar.
         **EXTREMELY IMPORTANT** you absolutely have to plug all the values into the function before running it.
+        **EXTREMELY IMPORTANT** explain to user that if the document was too long only part of it can be reviewed. 
+        the user can still though paste in text for u to review grammar.
         """,
         "parameters": {
             "type": "object",
@@ -578,7 +580,7 @@ async def call_8020_function(messages, func_call, user_id=None, websocket=None):
         )
         try:
             print("\n[web_search]: got search results, summarizing content")
-            return messages, local_max_tokens
+            return messages, max_tokens
         except Exception as e:
             print(type(e))
             raise Exception("web_search function failed")
@@ -665,7 +667,7 @@ async def call_8020_function(messages, func_call, user_id=None, websocket=None):
         )
         try:
             print("\n[vectorstore]: got search results, summarizing content")
-            return messages, vectorstore_max_tokens
+            return messages, max_tokens
         except Exception as e:
             print(type(e))
             raise Exception("vectorstore function failed")

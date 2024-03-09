@@ -24,7 +24,7 @@ def proofread(user_id: str, which_doc_filepath: str) -> List[str]:
         chunk.page_content
         for chunk in GLOBAL_CHUNKED_TEXTS[user_id]
         if chunk.metadata.get("source") == which_doc_filepath
-    ]
+    ][:5]
     print(f"\n[proofread]: extracted {len(chunks)} chunks for proofreading")
 
     responses = []

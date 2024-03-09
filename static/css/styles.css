@@ -22,12 +22,12 @@
       .logo-wrapper {
         position: absolute;
         top: 50%; 
-        right: 1vw;
+        right: 10vw;
         transform: translateY(-50%); /* Adjust for the element's own height */
       }
 
       .giant-logo{
-        width: 20vw;
+        width: 10vw;
       }
 
       .giant-text {

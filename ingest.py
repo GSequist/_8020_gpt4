@@ -1,4 +1,5 @@
 import os
+import re
 import shutil
 from typing import List
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -95,6 +96,7 @@ def process_documents(user_id: str, file_path: str, user_folder: str) -> None:
         tokens = tokenizer.encode(accumulated_texts)
         token_chunks = [tokens[i : i + 3000] for i in range(0, len(tokens), 3000)]
         split_texts = [tokenizer.decode(chunk) for chunk in token_chunks]
+        split_texts = [re.sub(r"\s+", " ", text) for text in split_texts]
         for split_text in split_texts:
             new_doc = Document(
                 page_content=split_text, metadata=documents[-1].metadata.copy()
@@ -121,6 +123,7 @@ def process_documents(user_id: str, file_path: str, user_folder: str) -> None:
             filename = os.path.basename(source_path)
             chunks = text_splitter.split_text(doc.page_content)
             for chunk in chunks:
+                chunk = re.sub(r"\s+", " ", chunk)
                 chunk_with_filename = f"Filename: {filename}\n{chunk}"
                 new_doc = Document(
                     page_content=chunk_with_filename, metadata=doc.metadata.copy()
