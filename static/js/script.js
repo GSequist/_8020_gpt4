@@ -96,6 +96,7 @@
         input.style.color = 'rgb(255, 255, 255)';
         input.style.borderBottom = '1px solid rgb(255, 255, 255)';
         output.style.color = 'rgb(255, 255, 255)';
+        output.style.textShadow = '0 0 5px rgba(0, 0, 0)';
         input.classList.remove('input-light-theme');
         input.classList.add('input-dark-theme');
         }
@@ -112,6 +113,7 @@
         input.style.color = 'rgb(0, 0, 0)';
         input.style.borderBottom = '1px solid rgb(0, 0, 0)';
         output.style.color = 'rgb(0, 0, 0)';
+        output.style.textShadow = '0 0 5px rgba(255, 255, 255)';
         input.classList.remove('input-dark-theme');
         input.classList.add('input-light-theme');
         }
