@@ -740,6 +740,20 @@
         input.value = `>uploading ${file.name}...`;
         uploadButton.classList.add('disabled-button');
 
+        stopTypewriter = true;
+        if (!hasClearedOutput) {
+            output.innerHTML = ''; 
+            hasClearedOutput = true;
+            }  
+
+
+        const isWhiteBackground = document.body.style.backgroundColor === 'rgb(190, 190, 190)';
+        gifSrc = isWhiteBackground ? 'static/progress_bar_black.gif' : 'static/progress_bar.gif'; 
+        const gifContainer = document.getElementById('process-gif-container');
+        gifContainer.innerHTML = gifSrc ? `<img src="${gifSrc}" alt=">processing gif.." style="height: 25px;"/>` : '';
+        output.appendChild(gifContainer);
+        
+
         const formData = new FormData();
         formData.append('file', file);
 
@@ -754,7 +768,12 @@
             uploadButton.classList.remove('disabled-button');
 
             if (data.status === 'success') {
-                input.value = `>file ${file.name} uploaded successfully`;
+                input.value = `>file ${file.name} uploaded successfully`
+                const isWhiteBackground = document.body.style.backgroundColor === 'rgb(190, 190, 190)';
+                gifSrc = isWhiteBackground ? 'static/success_black.gif' : 'static/success.gif'; 
+                const gifContainer = document.getElementById('process-gif-container');
+                gifContainer.innerHTML = gifSrc ? `<img src="${gifSrc}" alt=">processing gif.." style="height: 25px;"/>` : '';
+                output.appendChild(gifContainer);
                 aiInput = true; 
             } else if (data.status === 'error' && data.message === '>file size exceeded')
             {

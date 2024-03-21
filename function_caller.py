@@ -1128,6 +1128,19 @@ async def chat_completion_with_function_execution(
             max_tokens=max_tokens,
             functions=_8020_functions,
         )
+        if response_generator is None:
+            print(
+                "\n[chat_completion_with_function_execution]: Warning: chat_completion_request returned None. Expected an async iterable."
+            )
+            await websocket.send_text(
+                json.dumps(
+                    {
+                        "type": "response",
+                        "data": "Sorry, I am unable to process your request at the moment. Please try again later.",
+                    }
+                )
+            )
+            break
         func_call["arguments"] = ""  # reset arguments
         async for chunk in response_generator:
             if hasattr(chunk.choices[0], "delta"):
