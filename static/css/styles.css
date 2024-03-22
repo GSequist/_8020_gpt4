@@ -39,6 +39,13 @@
         cursor: pointer;
       }
 
+      .delete-tab {
+      width: 1.5vw; 
+      cursor: pointer;
+      margin: 2px; 
+      }
+
+
       .voiceButton {
         width: 1.5vw;
         cursor: pointer;

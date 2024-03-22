@@ -51,7 +51,36 @@
     socket.addEventListener('close', function (event) {
         console.log('Disconnected from the server. Refreshing page...');
         window.location.reload(); // enforce refresh
-    });      
+    });   
+    
+    //delete userid
+    async function clearConversationAndStartNew() {
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            await socket.send(JSON.stringify({ type: "delete_conversation", user_id: localStorage.getItem('userId') }));
+            console.log('Conversation deleted with user ID:', localStorage.getItem('userId'));
+            
+            socket.close();
+            
+            await new Promise(resolve => socket.onclose = resolve);
+        }
+
+        localStorage.removeItem('userId');
+        const newUserId = getUserId(); 
+        
+        // const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+        // const newSocket = new WebSocket(`${protocol}//${location.host}/ws/${newUserId}`);
+        
+        // window.socket = newSocket;
+        
+        // newSocket.onmessage = function(event) {
+        //     console.log('Message from server:', event.data);
+        // };
+        
+        console.log('New conversation started with user ID:', newUserId);
+    }
+
+    document.querySelector('.delete-tab').addEventListener('click', clearConversationAndStartNew);
+
 
     ////////////////////////////////////////////////////modular formatting
     
@@ -822,9 +851,10 @@
             if (!stopTypewriter) {
                 outputField.innerHTML = '';
                 const messages = [
-                'hello, welcome',
-                'ask away',
-                'I am here to help',
+                'ask me to perform several tasks at once, for example upload a diagram you need to analyze, ask me to do a web research on what i found and then create a presentation ',
+                'transform your documents to a Q&A box',
+                '🤓 ask away',
+                'upload a research paper, regulatory document or other complex text and ask me to expain it to you, expand on certain areas or even do web search on things you are interested in',
                 ];
                 const index = messages.indexOf(text);
                 text = messages[(index + 1) % messages.length];

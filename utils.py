@@ -86,6 +86,10 @@ class Conversation:
                 )
             )
 
+    def delete_conversation(self):
+        self.conversation_history = []
+        print("\n[Conversation]: Conversation history deleted.")
+
     def get_conversation_history(self):
         """
         Prepares the conversation history for sending to the frontend.
