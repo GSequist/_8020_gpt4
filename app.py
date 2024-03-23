@@ -271,6 +271,8 @@ async def handle_message(user_id, data, websocket):
                 await websocket.send_text(message)
                 await asyncio.sleep(0.01)
         if audio_preferences.get(user_id, False):
+            if len(compl_response) > 4096:
+                compl_response = compl_response[-4096:]
             spoken_response = await client.audio.speech.create(
                 model="tts-1",
                 voice="nova",

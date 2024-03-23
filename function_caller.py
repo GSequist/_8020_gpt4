@@ -733,7 +733,7 @@ async def call_8020_function(messages, func_call, user_id=None, websocket=None):
             return messages, max_tokens
         except Exception as e:
             print(type(e))
-            raise Exception("[dalle3 function failed")
+            raise Exception("dalle3 function failed")
 
     elif func_call["name"] == "gif_maker":
         message = json.dumps(
