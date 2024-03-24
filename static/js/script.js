@@ -583,7 +583,6 @@
             const gifContainer = document.getElementById('process-gif-container');
             gifContainer.innerHTML = gifSrc ? `<img src="${gifSrc}" alt="processing gif" style="height: 25px;" /><br>` : '';
             output.appendChild(gifContainer);
-            output.scrollTop = output.scrollHeight;
         }
     });
 
