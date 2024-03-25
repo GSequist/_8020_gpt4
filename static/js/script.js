@@ -102,6 +102,7 @@
     const copyButton = document.querySelector('.copyButton');
     const voiceButton = document.querySelector('.voiceButton');
     const giantLogo = document.querySelector('.giant-logo');
+    const flushButton = document.querySelector('.flushButton');
 
     ////////////////////////////////////////////////////styling
     // toggle circle buttons logic
@@ -351,6 +352,7 @@
                 let messageContent = data.data;
                 if (messageContent.includes('\n')) {
                     messageContent = messageContent.replace(/\n/g, '<br>');
+                    console.log('receiving messageContent:', messageContent);
                 }
                 if (!cursorSpan) {
                     cursorSpan = document.createElement('span');
@@ -517,6 +519,23 @@
         output.scrollTop = output.scrollHeight;
     });
 
+    //flush and request previous conversations
+    flushButton.addEventListener('click', function() {
+        const container = document.querySelector('.container');
+        const gifContainer = document.getElementById('process-gif-container');
+        gifContainer.innerHTML = '';
+        container.appendChild(gifContainer);
+        const iconContainer = document.getElementById('icon-container');
+        iconContainer.innerHTML = '';
+        container.appendChild(iconContainer);
+        const sourcesContainer = document.getElementById('sources-container');  
+        sourcesContainer.innerHTML = '';
+        container.appendChild(sourcesContainer);
+        const message = JSON.stringify({ type: "request_previous_conversations" });
+        socket.send(message);
+        hasLoadedPreviousConversations = false;
+    });
+
     // listen for 'previous_conversations' event
     socket.addEventListener('message', function (event) {
         if (event.data instanceof Blob) {
@@ -583,6 +602,7 @@
             const gifContainer = document.getElementById('process-gif-container');
             gifContainer.innerHTML = gifSrc ? `<img src="${gifSrc}" alt="processing gif" style="height: 25px;" /><br>` : '';
             output.appendChild(gifContainer);
+            output.scrollTop = output.scrollHeight;
         }
     });
 

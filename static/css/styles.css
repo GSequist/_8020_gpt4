@@ -51,6 +51,11 @@
         cursor: pointer;
       }
 
+      .flushButton {
+        width: 1.5vw;
+        cursor: pointer;
+      }
+
       .userMessage {
         font-weight: bold;
       }

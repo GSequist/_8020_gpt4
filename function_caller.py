@@ -69,7 +69,7 @@ async def chat_completion_request(messages, user_id, max_tokens=3000, functions=
                 for msg in reversed(messages_copy):
                     if msg["role"] == role:
                         preserved_messages.append(msg)
-                        print(f"\n[chat_completion_request]: preserving message: {msg}")
+                        # print(f"\n[chat_completion_request]: preserving message: {msg}")
                         count += 1
                         if count == preserved_counts[role]:
                             break
@@ -81,9 +81,9 @@ async def chat_completion_request(messages, user_id, max_tokens=3000, functions=
                         truncated_tokens = tokenizer.encode(msg["content"])[:1000]
                         msg["content"] = tokenizer.decode(truncated_tokens)
                         total_tokens -= current_msg_tokens - 1000
-                        print(
-                            f"\n[chat_completion_request]: truncated function message: {msg} current total tokens: {total_tokens}"
-                        )
+                        # print(
+                        #     f"\n[chat_completion_request]: truncated function message: {msg} current total tokens: {total_tokens}"
+                        # )
             if total_tokens > max_tokens:
                 last_removed_msg = None
                 for msg in messages_copy:
@@ -98,9 +98,9 @@ async def chat_completion_request(messages, user_id, max_tokens=3000, functions=
 
                     total_tokens -= current_msg_tokens
                     messages_copy.remove(msg)
-                    print(
-                        f"\n[chat_completion_request]: removing message to reduce tokens: {msg}"
-                    )
+                    # print(
+                    #     f"\n[chat_completion_request]: removing message to reduce tokens: {msg}"
+                    # )
 
                     if total_tokens <= max_tokens:
                         break
@@ -114,9 +114,9 @@ async def chat_completion_request(messages, user_id, max_tokens=3000, functions=
                         last_removed_msg["content"] = tokenizer.decode(truncated_tokens)
                         total_tokens += len(truncated_tokens)
                         messages_copy.append(last_removed_msg)
-                        print(
-                            f"\n[chat_completion_request]: re-inserting truncated last removed message: {last_removed_msg}"
-                        )
+                        # print(
+                        #     f"\n[chat_completion_request]: re-inserting truncated last removed message: {last_removed_msg}"
+                        # )
 
             print(
                 f"\n[chat_completion_request]: Total tokens after token cutter loop: {total_tokens}"
@@ -163,6 +163,7 @@ async def chat_completion_request(messages, user_id, max_tokens=3000, functions=
                 Before answering, take a moment to think deeply about how best to answer user query. Think always step by step. 
                 Then think more steps. First think what are the necessary steps to answer user question fully. 
                 Then think how best to execute these steps either by just writing or first calling functions you have access to.
+                Remember, you are a highly intelligent AI assistant developed by 8020ai+ with access to tools.
                 """,
             }
 

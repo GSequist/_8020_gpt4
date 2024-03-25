@@ -84,9 +84,9 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str):
                 await websocket.close(reason="Conversation deleted")
                 return
             elif data_json.get("type") == "request_previous_conversations":
-                print("[websocket_endpoint]: requesting previous conversations")
+                print("\n[websocket_endpoint]: requesting previous conversations")
                 await send_previous_conversations(user_id, websocket)
-            if data_json.get("type") == "request_last_assistant_message":
+            elif data_json.get("type") == "request_last_assistant_message":
                 await send_last_assistant_message(user_id, websocket)
             else:
                 await handle_message(user_id, data_json, websocket)
