@@ -134,7 +134,7 @@
         else {
         toggleButton.src = 'static/toggle_new_black.png';
         voiceButton.src = 'static/voice.png';
-        flushButton.src = 'static/flush.png';
+        flushButton.src = 'static/flush_black.png';
         body.style.backgroundColor = 'rgb(190, 190, 190)';
         giantLogo.src = 'static/logo_elements_large_black.png';
         toggleTitle.style.color = 'rgb(0, 0, 0)';
