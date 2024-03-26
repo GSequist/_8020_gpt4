@@ -13,10 +13,15 @@
           270deg, 
           rgba(255, 255, 255, 0.1),
           rgba(0, 255, 255, 0.1) 25%,
-          rgba(0, 0, 255, 0.1) 50%,
+          rgba(0, 0, 255, 0.3) 50%,
           rgba(255, 0, 255, 0.1) 75%,
           rgba(255, 255, 255, 0.1)
         );
+      }
+
+      body.antialiased {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
       }
       
       .header-container {
@@ -175,8 +180,8 @@
       }
 
       #output {
-          scrollbar-width: thin !important; /* For Firefox */
-          scrollbar-color: transparent transparent !important; /* For Firefox: make scrollbar thumb and track transparent */
+          scrollbar-width: thin !important; 
+          scrollbar-color: transparent transparent !important; 
       }
 
 

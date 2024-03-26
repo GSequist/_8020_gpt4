@@ -228,7 +228,7 @@
     }
 
     function isTableFormat(data) {
-        return data.includes('~');
+        return data.includes('⎍');
     }
 
     let tableElement = null; 
@@ -236,32 +236,6 @@
     let currentRow = null; 
     let currentCell = null;
     
-    // helper for code block rendering
-    function createAndAppendCodeBlock(outputElement) {
-        const codeBlock = document.createElement('pre');
-        codeBlock.classList.add('code-block');
-        outputElement.appendChild(codeBlock);
-        return codeBlock;
-    }
-
-    let backtickSequence = '';
-    let codeBlockElement = null;
-    let isProcessingCode = false;
-
-    function isCodeFormat(data) {
-        backtickSequence += data;
-        const tripleBacktickRegex = /(`\n*\n*`)\n*\n*`/;
-        if (tripleBacktickRegex.test(backtickSequence)) {
-            backtickSequence = ''; 
-            return true;
-        }
-        if (backtickSequence.length > 100) { 
-            backtickSequence = '';
-        }
-        return false;
-    }
-
-
     // listen for response from server
     socket.addEventListener('message', function (event) {
             if (event.data instanceof Blob) {
@@ -307,7 +281,7 @@
             }
 
             if (isProcessingTable) {
-                let parts = data.data.split('~');
+                let parts = data.data.split('⎍');
                 parts.forEach((part, index) => {
                     let cells = part.split('|');
                     cells.forEach((cell, cellIndex) => {
@@ -332,44 +306,26 @@
                     }
                 });
                 } else {
-                if (isCodeFormat(data.data)) {
-                    if (!isProcessingCode) {
-                        isProcessingCode = true;
-                        codeBlockElement = createAndAppendCodeBlock(output);
-                    } else {
-                        isProcessingCode = false;
+                    let messageContent = data.data;
+                    if (messageContent.includes('\n')) {
+                        messageContent = messageContent.replace(/\n/g, '<br>');    
                     }
-                    data.data = data.data.replace('```', '');
-                }
-
-                if (isProcessingCode) {
-                    let formattedCode = data.data;
-                    if (formattedCode.includes('\n')) {
-                        formattedCode = formattedCode.replace(/\n/g, '<br>');
+                    if (!cursorSpan) {
+                        cursorSpan = document.createElement('span');
+                        cursorSpan.id = 'typing-cursor';
+                        cursorSpan.classList.add('typing-cursor');
                     }
-                    codeBlockElement.innerHTML += `<span>${formattedCode}</span>`;
-                    if (!isProcessingCode) {
-                        codeBlockElement = null;
-                    }
-            } else {
-                let messageContent = data.data;
-                if (messageContent.includes('\n')) {
-                    messageContent = messageContent.replace(/\n/g, '<br>');    
+                    output.appendChild(cursorSpan);
+                    cursorSpan.insertAdjacentHTML('beforebegin', `<span>${messageContent}</span>`);
                 }
-                if (!cursorSpan) {
-                    cursorSpan = document.createElement('span');
-                    cursorSpan.id = 'typing-cursor';
-                    cursorSpan.classList.add('typing-cursor');
-                }
-                output.appendChild(cursorSpan);
-                cursorSpan.insertAdjacentHTML('beforebegin', `<span>${messageContent}</span>`);
+            }
             }
         }
-        }
-    }
-    });
+        );
 
 
+
+    
     document.querySelector('.voiceButton').addEventListener('click', async function() {
         console.log('voiceButton clicked');
         isAudioEnabled = !isAudioEnabled; 
@@ -533,12 +489,33 @@
         const sourcesContainer = document.getElementById('sources-container');  
         sourcesContainer.innerHTML = '';
         container.appendChild(sourcesContainer);
+        const copyButton = document.querySelector('.copyButton');
+        copyButton.style.visibility = 'hidden';
+        container.appendChild(copyButton);
         const message = JSON.stringify({ type: "request_previous_conversations" });
         socket.send(message);
         hasLoadedPreviousConversations = false;
+        hasClearedOutput = false;
     });
 
     // listen for 'previous_conversations' event
+    //help render tables from old text
+    function renderTableFromText(text) {
+        const [tableData, ...rest] = text.split('±');
+        let html = '<table>';
+        const rows = tableData.split('⎍').slice(1);
+        rows.forEach(row => {
+            html += '<tr>';
+            const cells = row.split('|');
+            cells.forEach(cell => {
+                html += `<td>${cell}</td>`;
+            });
+            html += '</tr>';
+        });
+        html += '</table>';
+        return html + rest.join(''); 
+    }
+
     socket.addEventListener('message', function (event) {
         if (event.data instanceof Blob) {
             return;
@@ -560,10 +537,14 @@
                     } else {
                         const iconSrc = body.style.backgroundColor === 'rgb(190, 190, 190)' 
                         ? 'static/logo_elements_black.png' : 'static/logo_elements_white.png';
-                        if (message.content.includes('\n')) {
-                            message.content = message.content.replace(/\n/g, '<br>');
+                        let content = message.content;
+                        if (content.includes('⎍')) {
+                        content = renderTableFromText(content);
+                        } else if (content.includes('\n')) {
+                            content = content.replace(/\n/g, '<br>');
                         }
-                        output.innerHTML += `<img src="${iconSrc}" alt="" style="height: 20px; border-radius: 50%; vertical-align: middle; margin-right: 5px;">` + `<span>${message.content}</span><br><br>`;
+                        output.innerHTML += `<img src="${iconSrc}" alt="" style="height: 20px; border-radius: 50%; vertical-align: middle; margin-right: 5px;">` + `<span>${content}</span><br><br>`;
+                        
                         var hr = document.createElement('hr');
                         hr.style.borderTop = '0.5px dashed grey';
                         hr.style.borderBottom = 'none';
