@@ -27,7 +27,6 @@ from utils import (
     sources_sessions,
     user_sessions,
     proofreading_sessions,
-    audio_preferences,
     conversations,
     WORK_FOLDER,
 )
@@ -83,6 +82,8 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str):
                 print(f"\nConversation for user {user_id} deleted.")
                 await websocket.close(reason="Conversation deleted")
                 return
+            elif data_json.get("type") == "request_audio":
+                await stream_last_audio(user_id, websocket)
             elif data_json.get("type") == "request_previous_conversations":
                 print("\n[websocket_endpoint]: requesting previous conversations")
                 await send_previous_conversations(user_id, websocket)
@@ -227,6 +228,32 @@ def get_last_message_of_role(conversation_history, role):
     return None
 
 
+async def stream_last_audio(user_id: str, websocket: WebSocket):
+    last_assistant_message = get_last_message_of_role(
+        conversations[user_id].get_conversation_history(), "assistant"
+    )
+    if last_assistant_message:
+        last_assistant_message = last_assistant_message["content"]
+        if len(last_assistant_message) > 4096:
+            last_assistant_message = last_assistant_message[-4096:]
+        spoken_response = await client.audio.speech.create(
+            model="tts-1",
+            voice="nova",
+            input=last_assistant_message,
+            response_format="mp3",
+        )
+
+        buffer = io.BytesIO()
+        buffer.write(spoken_response.content)
+        buffer.seek(0)
+        audio_data = buffer.read()
+
+        await websocket.send_bytes(audio_data)
+        print(f"\n[stream_ladt_audio]: audio emitted {audio_data[:100]}")
+    else:
+        print(f"\n[stream_ladt_audio]: audio not requested")
+
+
 ############################################################################################################
 ## message handling
 
@@ -239,10 +266,6 @@ async def handle_message(user_id, data, websocket):
     query = data.get("message")
 
     data_type = data.get("type")
-
-    if data_type == "toggle_audio":
-        audio_preferences[user_id] = data.get("isAudioEnabled", False)
-        return
 
     if query:
         print(f"\n[handle_message]: inserting chat text...{query}")
@@ -269,26 +292,6 @@ async def handle_message(user_id, data, websocket):
                 message = json.dumps({"type": "response", "data": full_response})
 
                 await websocket.send_text(message)
-                await asyncio.sleep(0.01)
-        if audio_preferences.get(user_id, False):
-            if len(compl_response) > 4096:
-                compl_response = compl_response[-4096:]
-            spoken_response = await client.audio.speech.create(
-                model="tts-1",
-                voice="nova",
-                input=compl_response,
-                response_format="mp3",
-            )
-
-            buffer = io.BytesIO()
-            buffer.write(spoken_response.content)
-            buffer.seek(0)
-            audio_data = buffer.read()
-
-            await websocket.send_bytes(audio_data)
-            print(f"\n[handle_message]: audio emitted {audio_data[:100]}")
-        else:
-            print(f"\n[handle_message]: audio not requested")
 
         if user_id in proofreading_sessions:
             proofread_doc = proofreading_sessions[user_id]

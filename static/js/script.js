@@ -66,15 +66,7 @@
 
         localStorage.removeItem('userId');
         const newUserId = getUserId(); 
-        
-        // const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-        // const newSocket = new WebSocket(`${protocol}//${location.host}/ws/${newUserId}`);
-        
-        // window.socket = newSocket;
-        
-        // newSocket.onmessage = function(event) {
-        //     console.log('Message from server:', event.data);
-        // };
+    
         
         console.log('New conversation started with user ID:', newUserId);
     }
@@ -323,57 +315,52 @@
         }
         );
 
-
-
-    
+    ////////////////////////////////////////////////////audio
     document.querySelector('.voiceButton').addEventListener('click', async function() {
         console.log('voiceButton clicked');
         isAudioEnabled = !isAudioEnabled; 
-        socket.send(JSON.stringify({ type: "toggle_audio", isAudioEnabled: isAudioEnabled }));
+        socket.send(JSON.stringify({ type: "request_audio", isAudioEnabled: isAudioEnabled }));
         if (isAudioEnabled) {
             console.log("Audio playback enabled. Waiting for audio data...");
-            if (audioContext.state === 'suspended') {
-                audioContext.resume();
-            }
         } else {
             console.log("Audio playback disabled.");
-            if (audioContext.state === 'running') {
-                audioContext.suspend();
+            if (window.currentAudioSource) {
+                window.currentAudioSource.stop();
+                window.currentAudioSource = null;
             }
         }
         });
 
     socket.addEventListener('message', function (event) {
     if (!isAudioEnabled) {
-        console.log("Audio playback is disabled. Ignoring incoming audio data.");
-        return; 
-    }
+            console.log("Audio playback is disabled. Ignoring incoming audio data.");
+            return; 
+        }
     if (event.data instanceof Blob) {
-        processAndPlayAudioBlob(event.data);
-        console.log("Audio chunk loaded, process and play it here.");
-    }
+            processAndPlayAudioBlob(event.data);
+            console.log("Audio chunk loaded, process and play it here.");
+        }
     });
 
     function processAndPlayAudioBlob(audioBlob) {
         const reader = new FileReader();
         reader.onload = function() {
             const arrayBuffer = reader.result;
-            console.log("ArrayBuffer size:", arrayBuffer.byteLength);
-            console.log("Data type:", typeof arrayBuffer);
-                console.log("Data instance:", arrayBuffer instanceof ArrayBuffer);
-                console.log("Data length:", arrayBuffer.byteLength);
             decodeAndPlay(arrayBuffer);
             }
-            reader.readAsArrayBuffer(audioBlob);
-        };
+        reader.readAsArrayBuffer(audioBlob);
+    };
 
     function decodeAndPlay(arrayBuffer) {
         audioContext.decodeAudioData(arrayBuffer, function(decodedData) {
+            if (window.currentAudioSource) {
+                window.currentAudioSource.stop();
+            }
             const source = audioContext.createBufferSource();
             source.buffer = decodedData;
             source.connect(audioContext.destination);
             source.start(); 
-            console.log("Audio should be playing now.");
+            window.currentAudioSource = source;
         }, function(e) {
             console.error("Error with decoding audio data:", e);
         });
@@ -403,12 +390,6 @@
         fetch(`/files/${getUserId()}`)
             .then((response) => response.json())
             .then((files) => {
-                // check if there are files 
-                if (files.length > 0) {
-                    var message = document.createElement('p');
-                    message.textContent = ">your files:";
-                    output.appendChild(message);
-                }
                 // loop through the file list and create download links
                 files.forEach(file => {
                     var fileContainer = document.createElement('div');
@@ -433,7 +414,7 @@
                 });
                 var br = document.createElement('br');
                 output.appendChild(br);
-                output.scrollTop = output.scrollHeight;
+                // output.scrollTop = output.scrollHeight;
             });
     }
 

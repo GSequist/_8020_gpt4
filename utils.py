@@ -21,7 +21,6 @@ sources_sessions = {}
 user_sessions = {}
 conversations = {}
 proofreading_sessions = {}
-audio_preferences = {}
 
 ############################################################################################################
 ## work folder
