@@ -108,7 +108,7 @@
         document.body.classList.toggle('darkmode');
         toggleButton.src = 'static/toggle_new_white.png';
         voiceButton.src = 'static/voice_white.png';
-        flushButton.src = 'static/flush_white.png';
+        flushButton.src = 'static/refresh_white.png';
         body.style.backgroundColor = 'rgb(50, 50, 50)';
         giantLogo.src = 'static/logo_elements_large_white.png';
         toggleTitle.style.color = 'rgb(255, 255, 255)';
@@ -126,7 +126,7 @@
         else {
         toggleButton.src = 'static/toggle_new_black.png';
         voiceButton.src = 'static/voice.png';
-        flushButton.src = 'static/flush_black.png';
+        flushButton.src = 'static/refresh_black.png';
         body.style.backgroundColor = 'rgb(190, 190, 190)';
         giantLogo.src = 'static/logo_elements_large_black.png';
         toggleTitle.style.color = 'rgb(0, 0, 0)';
